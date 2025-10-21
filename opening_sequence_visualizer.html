@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEXUKI Opening Sequence Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1d29 0%, #2d3249 50%, #1e2139 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Data Loading Section */
+        .loading-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .loading-section h2 {
+            margin-bottom: 15px;
+            color: #1a202c;
+            font-size: 1.3em;
+        }
+
+        .file-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 15px;
+        }
+
+        .file-row label {
+            min-width: 180px;
+            font-weight: 500;
+        }
+
+        .file-row input[type="file"] {
+            flex: 1;
+        }
+
+        .status {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        /* Opening Selection */
+        .selection-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 900px;
+            display: none;
+        }
+
+        .selection-section h2 {
+            margin-bottom: 15px;
+            color: #1a202c;
+            font-size: 1.3em;
+        }
+
+        .select-row {
+            margin-bottom: 15px;
+        }
+
+        .select-row label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .select-row select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 1em;
+            background: white;
+        }
+
+        .select-row input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+            transform: scale(1.2);
+        }
+
+        .select-row input[type="range"] {
+            cursor: pointer;
+        }
+
+        .select-row label {
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* Game Container */
+        .game-container {
+            background: linear-gradient(to right,
+                rgba(255, 240, 240, 0.98) 0%,
+                rgba(255, 255, 255, 0.98) 50%,
+                rgba(240, 248, 255, 0.98) 100%);
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 960px;
+            width: 100%;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-header h1 {
+            color: #1a202c;
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .game-layout {
+            display: flex;
+            justify-content: center;
+            align-items: start;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .game-board-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .player-panel {
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+            border: 1px solid rgba(0,0,0,0.08);
+            position: absolute;
+            width: 300px;
+            top: 0;
+        }
+
+        .player-panel.player1 {
+            left: -320px;
+            background: linear-gradient(145deg, #fdf6f6, #f8f9fa);
+        }
+
+        .player-panel.player2 {
+            right: -320px;
+            background: linear-gradient(145deg, #f6f8fd, #f8f9fa);
+        }
+
+        .player-panel h3 {
+            margin-bottom: 18px;
+            font-size: 1.4em;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .player-panel.player1 h3 {
+            color: #c0392b;
+        }
+
+        .player-panel.player2 h3 {
+            color: #2980b9;
+        }
+
+        .score {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 16px 0;
+            text-align: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 12px;
+        }
+
+        .tiles-info {
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .tiles-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 8px;
+            min-height: 60px;
+        }
+
+        .tile-chip {
+            background: rgba(255,255,255,0.8);
+            border: 2px solid #333;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1em;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tile-chip:not(.used):hover {
+            transform: scale(1.15);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .tile-chip.selected {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px #ffd700;
+            background: #fffacd;
+        }
+
+        .player-panel.player1 .tile-chip {
+            border-color: #c0392b;
+            color: #c0392b;
+        }
+
+        .player-panel.player2 .tile-chip {
+            border-color: #2980b9;
+            color: #2980b9;
+        }
+
+        .tile-chip.used {
+            opacity: 0.3;
+            text-decoration: line-through;
+            cursor: not-allowed;
+        }
+
+        /* Board styles */
+        .board-container {
+            width: 450px;
+            height: 500px;
+            position: relative;
+        }
+
+        #board {
+            width: 100%;
+            height: 100%;
+        }
+
+        .hex {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hex polygon {
+            stroke: #2c3e50;
+            stroke-width: 2;
+            transition: all 0.2s ease;
+        }
+
+        .hex.empty polygon {
+            fill: #ecf0f1;
+        }
+
+        .hex.valid-move polygon {
+            fill: #d5f4e6;
+            stroke: #27ae60;
+            stroke-width: 3;
+        }
+
+        .hex.valid-move:hover polygon {
+            fill: #a9dfbf;
+            stroke: #229954;
+        }
+
+        .hex.player1 polygon {
+            fill: #e74c3c;
+        }
+
+        .hex.player2 polygon {
+            fill: #3498db;
+        }
+
+        .hex-id {
+            font-size: 10px;
+            fill: #7f8c8d;
+            font-family: 'JetBrains Mono', monospace;
+            pointer-events: none;
+        }
+
+        .hex-text {
+            font-size: 28px;
+            font-weight: bold;
+            font-family: 'JetBrains Mono', monospace;
+            pointer-events: none;
+        }
+
+        .hex-text.player1 {
+            fill: #c0392b;
+        }
+
+        .hex-text.player2 {
+            fill: #2980b9;
+        }
+
+        /* Move Controls */
+        .move-controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .move-history {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .move-entry {
+            padding: 5px 10px;
+            margin-bottom: 3px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+        }
+
+        .move-entry.current {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .move-entry.player1 {
+            color: #c0392b;
+        }
+
+        .move-entry.player2 {
+            color: #2980b9;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .game-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1.1em;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .game-ended {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Data Loading Section -->
+    <div class="loading-section" id="loadingSection">
+        <h2>📁 Load Opening Data (Optional)</h2>
+        <div class="file-row">
+            <label>Layer 1 (Opening Book):</label>
+            <input type="file" id="layer1File" accept=".json">
+            <span id="layer1Status"></span>
+        </div>
+        <div class="file-row">
+            <label>Layer 2 (P2 Counters):</label>
+            <input type="file" id="layer2File" accept=".json">
+            <span id="layer2Status"></span>
+        </div>
+
+        <h2 style="margin-top: 25px;">⚙️ AI Configuration</h2>
+        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em;">
+            <strong>⚠️ Note:</strong> High simulation counts (10k+) may trigger browser "unresponsive script" warnings. Click "Wait" to let the AI finish thinking. This is normal behavior.
+        </div>
+        <div class="select-row">
+            <label>MCTS Simulations per Move:</label>
+            <select id="mctsSimsSelect">
+                <option value="100">100 (Fast preview)</option>
+                <option value="300">300 (Default - Layer 2 quality)</option>
+                <option value="500">500 (Good quality)</option>
+                <option value="1000" selected>1000 (High quality)</option>
+                <option value="2000">2000 (Layer 1 quality)</option>
+                <option value="3000">3000 (Very high quality)</option>
+                <option value="5000">5000 (Near-maximum quality)</option>
+                <option value="7500">7500 (Very high quality)</option>
+                <option value="10000">10000 (Maximum quality - slow)</option>
+                <option value="15000">15000 (Maximum quality - very slow)</option>
+                <option value="20000">20000 (Extreme quality - extremely slow)</option>
+            </select>
+        </div>
+        <div class="select-row">
+            <label>
+                <input type="checkbox" id="useMinimaxCheckbox" checked>
+                Enable Minimax Endgame (perfect play)
+            </label>
+        </div>
+        <div class="select-row" id="minimaxThresholdRow">
+            <label>Minimax starts at <span id="thresholdValue">6</span> empty hexes:</label>
+            <input type="range" id="minimaxThreshold" min="0" max="10" value="6"
+                   style="width: 100%; margin-top: 5px;">
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn" id="startFromScratchBtn">Start from Empty Board (No Opening Theory)</button>
+        </div>
+    </div>
+
+    <!-- Opening Selection Section -->
+    <div class="selection-section" id="selectionSection">
+        <h2>🎯 Select Opening Sequence</h2>
+        <div class="select-row">
+            <label>P1 Opening:</label>
+            <select id="p1OpeningSelect">
+                <option value="">-- Select P1 Opening --</option>
+            </select>
+        </div>
+        <div class="select-row">
+            <label>P2 Counter:</label>
+            <select id="p2CounterSelect" disabled>
+                <option value="">-- Select P1 Opening First --</option>
+            </select>
+        </div>
+
+        <button class="btn" id="startGameBtn" disabled>Start New Game</button>
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container" id="gameContainer">
+        <div class="game-header">
+            <h1>Opening Sequence Visualizer</h1>
+            <div id="openingInfo" style="color: #666; font-size: 0.9em; margin-top: 5px;"></div>
+        </div>
+
+        <div class="game-layout">
+            <!-- Player 1 Panel -->
+            <div class="player-panel player1">
+                <h3>Player 1</h3>
+                <div class="score" id="p1Score">0</div>
+                <div class="tiles-info" id="p1TilesInfo">Tiles: 9 remaining</div>
+                <div class="tiles-display" id="p1TilesDisplay"></div>
+            </div>
+
+            <!-- Board -->
+            <div class="game-board-container">
+                <div class="board-container">
+                    <svg id="board" viewBox="0 0 450 500"></svg>
+                </div>
+            </div>
+
+            <!-- Player 2 Panel -->
+            <div class="player-panel player2">
+                <h3>Player 2</h3>
+                <div class="score" id="p2Score">0</div>
+                <div class="tiles-info" id="p2TilesInfo">Tiles: 9 remaining</div>
+                <div class="tiles-display" id="p2TilesDisplay"></div>
+            </div>
+        </div>
+
+        <!-- Move Controls -->
+        <div class="move-controls">
+            <div class="move-history" id="moveHistory"></div>
+            <div class="control-buttons">
+                <button class="btn" id="nextMoveBtn" disabled>Make Next Move (AI)</button>
+                <button class="btn" id="undoBtn" disabled>Undo Move</button>
+                <button class="btn" id="autoPlayBtn" disabled>Auto-Play to End</button>
+                <button class="btn" id="resetBtn">Reset</button>
+                <button class="btn" id="changeOpeningBtn">Change Opening</button>
+            </div>
+            <div class="game-info" id="gameInfo">Load opening data to begin</div>
+            <div id="gameEndedMsg"></div>
+        </div>
+    </div>
+
+    <script src="hexuki_game_engine_v2.js"></script>
+    <script src="mcts_ai_player.js"></script>
+    <script src="minimax_endgame_optimized.js"></script>
+    <script>
+        let layer1Data = null;
+        let layer2Data = null;
+        let currentGame = null;
+        let currentP1Opening = null;
+        let currentP2Counter = null;
+        let moveHistory = [];
+        let mctsAI = null;
+        let minimaxSolver = null;
+        let isAutoPlaying = false;
+
+        // AI Configuration
+        let mctsSims = 1000;
+        let minimaxThreshold = 6;
+        let useMinimaxEndgame = true;
+
+        // Manual move state
+        let selectedTile = null;
+        let manualMoveMode = false;
+        let currentlyFromScratch = false;
+
+        // File loading
+        document.getElementById('layer1File').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    layer1Data = JSON.parse(event.target.result);
+                    document.getElementById('layer1Status').innerHTML = '<span class="status">✓ Loaded</span>';
+                    populateP1Openings();
+                    checkFilesLoaded();
+                } catch (error) {
+                    alert('Error loading Layer 1 file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('layer2File').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    layer2Data = JSON.parse(event.target.result);
+                    document.getElementById('layer2Status').innerHTML = '<span class="status">✓ Loaded</span>';
+                    checkFilesLoaded();
+                } catch (error) {
+                    alert('Error loading Layer 2 file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function checkFilesLoaded() {
+            if (layer1Data && layer2Data) {
+                document.getElementById('selectionSection').style.display = 'block';
+            }
+        }
+
+        function populateP1Openings() {
+            const select = document.getElementById('p1OpeningSelect');
+            select.innerHTML = '<option value="">-- Select P1 Opening --</option>';
+
+            // Use top 10 from Layer 1
+            const top10 = layer1Data.openings.slice(0, 10);
+            top10.forEach((opening, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `#${index + 1}: Hex ${opening.hex}-Tile ${opening.tile} (${(opening.winRate * 100).toFixed(1)}% Layer 1)`;
+                select.appendChild(option);
+            });
+        }
+
+        document.getElementById('p1OpeningSelect').addEventListener('change', (e) => {
+            const index = parseInt(e.target.value);
+            if (isNaN(index)) {
+                document.getElementById('p2CounterSelect').disabled = true;
+                document.getElementById('startGameBtn').disabled = true;
+                return;
+            }
+
+            currentP1Opening = layer1Data.openings[index];
+            populateP2Counters();
+        });
+
+        function populateP2Counters() {
+            const select = document.getElementById('p2CounterSelect');
+            select.innerHTML = '<option value="">-- Select P2 Counter --</option>';
+            select.disabled = false;
+
+            // Find matching opening in Layer 2 data
+            const layer2Opening = layer2Data.parentOpenings.find(p =>
+                p.p1Move.hex === currentP1Opening.hex &&
+                p.p1Move.tile === currentP1Opening.tile
+            );
+
+            if (!layer2Opening) {
+                alert('No Layer 2 data found for this opening!');
+                return;
+            }
+
+            // Add all P2 responses
+            layer2Opening.p2Responses.forEach((response, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                const p2WinPct = (response.p2WinRate * 100).toFixed(0);
+                option.textContent = `Hex ${response.p2Move.hexId}-Tile ${response.p2Move.tileValue} (P2 wins ${p2WinPct}%)`;
+                select.appendChild(option);
+            });
+
+            // Store full Layer 2 data for later
+            currentP1Opening.layer2Data = layer2Opening;
+        }
+
+        document.getElementById('p2CounterSelect').addEventListener('change', (e) => {
+            const index = parseInt(e.target.value);
+            if (isNaN(index)) {
+                document.getElementById('startGameBtn').disabled = true;
+                return;
+            }
+
+            currentP2Counter = currentP1Opening.layer2Data.p2Responses[index];
+            document.getElementById('startGameBtn').disabled = false;
+        });
+
+        // AI Configuration listeners
+        document.getElementById('mctsSimsSelect').addEventListener('change', (e) => {
+            mctsSims = parseInt(e.target.value);
+        });
+
+        document.getElementById('useMinimaxCheckbox').addEventListener('change', (e) => {
+            useMinimaxEndgame = e.target.checked;
+            document.getElementById('minimaxThresholdRow').style.display =
+                useMinimaxEndgame ? 'block' : 'none';
+        });
+
+        document.getElementById('minimaxThreshold').addEventListener('input', (e) => {
+            minimaxThreshold = parseInt(e.target.value);
+            document.getElementById('thresholdValue').textContent = minimaxThreshold;
+        });
+
+        document.getElementById('startGameBtn').addEventListener('click', () => startNewGame(false));
+        document.getElementById('startFromScratchBtn').addEventListener('click', () => {
+            console.log('Start from scratch button clicked!');
+            try {
+                startNewGame(true);
+            } catch (error) {
+                console.error('Error starting game:', error);
+                alert('Error starting game: ' + error.message);
+            }
+        });
+        document.getElementById('nextMoveBtn').addEventListener('click', makeNextMove);
+        document.getElementById('undoBtn').addEventListener('click', undoMove);
+        document.getElementById('autoPlayBtn').addEventListener('click', autoPlayToEnd);
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        document.getElementById('changeOpeningBtn').addEventListener('click', changeOpening);
+
+        function startNewGame(fromScratch = false) {
+            console.log('startNewGame called with fromScratch =', fromScratch);
+
+            // Hide sections, show game
+            document.getElementById('selectionSection').style.display = 'none';
+            if (fromScratch) {
+                // Keep loading section visible when starting from scratch
+                document.getElementById('loadingSection').style.display = 'none';
+            }
+            document.getElementById('gameContainer').style.display = 'block';
+
+            // Save mode for reset
+            currentlyFromScratch = fromScratch;
+
+            // Initialize game
+            currentGame = new HexukiGameEngineV2();
+            mctsAI = new MCTSPlayer(mctsSims);
+            minimaxSolver = useMinimaxEndgame ? new MinimaxEndgameSolverOptimized(currentGame) : null;
+            moveHistory = [];
+            isAutoPlaying = false;
+
+            // Create board
+            createHexBoard();
+
+            // Show opening info with AI settings
+            const aiInfo = useMinimaxEndgame ?
+                `MCTS: ${mctsSims} sims, Minimax at ${minimaxThreshold} empty` :
+                `MCTS: ${mctsSims} sims (no minimax)`;
+
+            if (fromScratch) {
+                // Starting from empty board - no opening theory
+                document.getElementById('openingInfo').textContent = `Starting from empty board | AI: ${aiInfo}`;
+                updateDisplay();
+                document.getElementById('nextMoveBtn').disabled = false;
+                document.getElementById('autoPlayBtn').disabled = false;
+                document.getElementById('gameInfo').textContent = `Move 1 - P1's turn`;
+            } else {
+                // Using opening theory
+                document.getElementById('openingInfo').textContent =
+                    `P1: Hex ${currentP1Opening.hex}-Tile ${currentP1Opening.tile} | P2: Hex ${currentP2Counter.p2Move.hexId}-Tile ${currentP2Counter.p2Move.tileValue} | AI: ${aiInfo}`;
+
+                // Apply first two moves
+                applyOpeningMoves();
+
+                updateDisplay();
+                document.getElementById('nextMoveBtn').disabled = false;
+                document.getElementById('autoPlayBtn').disabled = false;
+                document.getElementById('gameInfo').textContent = `Move 3 - P1's turn`;
+            }
+        }
+
+        function applyOpeningMoves() {
+            // Move 1: P1's opening
+            currentGame.makeMove(currentP1Opening.hex, currentP1Opening.tile);
+            moveHistory.push({
+                moveNum: 1,
+                player: 1,
+                hex: currentP1Opening.hex,
+                tile: currentP1Opening.tile
+            });
+
+            // Move 2: P2's counter
+            currentGame.makeMove(currentP2Counter.p2Move.hexId, currentP2Counter.p2Move.tileValue);
+            moveHistory.push({
+                moveNum: 2,
+                player: 2,
+                hex: currentP2Counter.p2Move.hexId,
+                tile: currentP2Counter.p2Move.tileValue
+            });
+        }
+
+        async function makeNextMove() {
+            if (currentGame.gameEnded) return;
+
+            document.getElementById('nextMoveBtn').disabled = true;
+            document.getElementById('autoPlayBtn').disabled = true;
+
+            // Check if we should use minimax
+            const emptyHexes = currentGame.board.filter(h => h.value === null).length;
+            const useMinimax = useMinimaxEndgame && minimaxSolver && emptyHexes <= minimaxThreshold;
+
+            if (useMinimax) {
+                document.getElementById('gameInfo').textContent = `AI thinking... (Minimax - ${emptyHexes} empty)`;
+            } else {
+                document.getElementById('gameInfo').textContent = `AI thinking... (MCTS - ${mctsSims} sims)`;
+            }
+
+            // Use timeout to let UI update
+            await sleep(100);
+
+            // Get AI move with chunked processing to avoid blocking
+            let result;
+            if (useMinimax) {
+                result = minimaxSolver.getBestMove(currentGame);
+            } else {
+                // Run MCTS in chunks to prevent browser "unresponsive script" warning
+                result = await runMCTSChunked(currentGame, mctsSims);
+            }
+
+            currentGame.makeMove(result.move.hexId, result.move.tileValue);
+
+            moveHistory.push({
+                moveNum: moveHistory.length + 1,
+                player: currentGame.currentPlayer === 1 ? 2 : 1, // Previous player
+                hex: result.move.hexId,
+                tile: result.move.tileValue
+            });
+
+            updateDisplay();
+
+            if (currentGame.gameEnded) {
+                handleGameEnd();
+            } else {
+                document.getElementById('nextMoveBtn').disabled = false;
+                document.getElementById('undoBtn').disabled = false;
+                document.getElementById('autoPlayBtn').disabled = false;
+                const nextPlayer = currentGame.currentPlayer;
+                document.getElementById('gameInfo').textContent =
+                    `Move ${moveHistory.length + 1} - P${nextPlayer}'s turn`;
+            }
+        }
+
+        async function autoPlayToEnd() {
+            isAutoPlaying = true;
+            document.getElementById('nextMoveBtn').disabled = true;
+            document.getElementById('autoPlayBtn').disabled = true;
+
+            while (!currentGame.gameEnded && isAutoPlaying) {
+                await makeNextMove();
+                await sleep(500); // Delay between moves
+            }
+
+            isAutoPlaying = false;
+        }
+
+        function handleGameEnd() {
+            const scores = currentGame.calculateScores();
+            const winner = scores.player1 > scores.player2 ? 1 :
+                          scores.player2 > scores.player1 ? 2 : 0;
+
+            let msg = '';
+            if (winner === 0) {
+                msg = `Game Over - DRAW! P1: ${scores.player1}, P2: ${scores.player2}`;
+            } else {
+                msg = `Game Over - Player ${winner} Wins! P1: ${scores.player1}, P2: ${scores.player2}`;
+            }
+
+            document.getElementById('gameEndedMsg').innerHTML = `<div class="game-ended">${msg}</div>`;
+            document.getElementById('nextMoveBtn').disabled = true;
+            document.getElementById('undoBtn').disabled = true;
+            document.getElementById('autoPlayBtn').disabled = true;
+            document.getElementById('gameInfo').textContent = 'Game finished';
+        }
+
+        function resetGame() {
+            startNewGame(currentlyFromScratch);
+            document.getElementById('gameEndedMsg').innerHTML = '';
+        }
+
+        function changeOpening() {
+            document.getElementById('loadingSection').style.display = 'block';
+            if (layer1Data && layer2Data) {
+                document.getElementById('selectionSection').style.display = 'block';
+            } else {
+                document.getElementById('selectionSection').style.display = 'none';
+            }
+            document.getElementById('gameContainer').style.display = 'none';
+        }
+
+        function updateDisplay() {
+            // Update board
+            updateHexBoard();
+
+            // Update scores
+            const scores = currentGame.calculateScores();
+            document.getElementById('p1Score').textContent = scores.player1;
+            document.getElementById('p2Score').textContent = scores.player2;
+
+            // Update tiles remaining
+            document.getElementById('p1TilesInfo').textContent =
+                `Tiles: ${currentGame.player1Tiles.length} remaining`;
+            document.getElementById('p2TilesInfo').textContent =
+                `Tiles: ${currentGame.player2Tiles.length} remaining`;
+
+            // Update tiles display
+            updateTilesDisplay();
+
+            // Update move history
+            updateMoveHistory();
+        }
+
+        function updateTilesDisplay() {
+            // Update P1 tiles
+            const p1Display = document.getElementById('p1TilesDisplay');
+            p1Display.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                const chip = document.createElement('div');
+                chip.className = 'tile-chip';
+                chip.textContent = i;
+                if (!currentGame.player1Tiles.includes(i)) {
+                    chip.classList.add('used');
+                } else {
+                    // Add click listener for available tiles
+                    chip.addEventListener('click', () => onTileClick(i, 1));
+                    if (selectedTile === i && currentGame.currentPlayer === 1) {
+                        chip.classList.add('selected');
+                    }
+                }
+                p1Display.appendChild(chip);
+            }
+
+            // Update P2 tiles
+            const p2Display = document.getElementById('p2TilesDisplay');
+            p2Display.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                const chip = document.createElement('div');
+                chip.className = 'tile-chip';
+                chip.textContent = i;
+                if (!currentGame.player2Tiles.includes(i)) {
+                    chip.classList.add('used');
+                } else {
+                    // Add click listener for available tiles
+                    chip.addEventListener('click', () => onTileClick(i, 2));
+                    if (selectedTile === i && currentGame.currentPlayer === 2) {
+                        chip.classList.add('selected');
+                    }
+                }
+                p2Display.appendChild(chip);
+            }
+        }
+
+        function updateMoveHistory() {
+            const historyDiv = document.getElementById('moveHistory');
+            historyDiv.innerHTML = '';
+
+            moveHistory.forEach((move, index) => {
+                const div = document.createElement('div');
+                div.className = `move-entry player${move.player}`;
+                if (index === moveHistory.length - 1) {
+                    div.classList.add('current');
+                }
+                div.textContent = `${move.moveNum}. P${move.player}: Hex ${move.hex}-Tile ${move.tile}`;
+                historyDiv.appendChild(div);
+            });
+
+            // Scroll to bottom
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+        }
+
+        function createHexBoard() {
+            const svg = document.getElementById('board');
+            svg.innerHTML = '';
+
+            const hexSize = 35;
+            const hexWidth = hexSize * 2;
+            const hexHeight = Math.sqrt(3) * hexSize;
+            const centerX = 225;
+            const centerY = 250;
+
+            // Hex positions (exact layout from ANTISYMMETRY_TEST)
+            const hexPositions = [
+                {id: 0, x: centerX, y: centerY - hexHeight * 2},
+                {id: 1, x: centerX - hexWidth * 0.75, y: centerY - hexHeight * 1.5},
+                {id: 2, x: centerX + hexWidth * 0.75, y: centerY - hexHeight * 1.5},
+                {id: 3, x: centerX - hexWidth * 1.5, y: centerY - hexHeight},
+                {id: 4, x: centerX, y: centerY - hexHeight},
+                {id: 5, x: centerX + hexWidth * 1.5, y: centerY - hexHeight},
+                {id: 6, x: centerX - hexWidth * 0.75, y: centerY - hexHeight * 0.5},
+                {id: 7, x: centerX + hexWidth * 0.75, y: centerY - hexHeight * 0.5},
+                {id: 8, x: centerX - hexWidth * 1.5, y: centerY},
+                {id: 9, x: centerX, y: centerY},
+                {id: 10, x: centerX + hexWidth * 1.5, y: centerY},
+                {id: 11, x: centerX - hexWidth * 0.75, y: centerY + hexHeight * 0.5},
+                {id: 12, x: centerX + hexWidth * 0.75, y: centerY + hexHeight * 0.5},
+                {id: 13, x: centerX - hexWidth * 1.5, y: centerY + hexHeight},
+                {id: 14, x: centerX, y: centerY + hexHeight},
+                {id: 15, x: centerX + hexWidth * 1.5, y: centerY + hexHeight},
+                {id: 16, x: centerX - hexWidth * 0.75, y: centerY + hexHeight * 1.5},
+                {id: 17, x: centerX + hexWidth * 0.75, y: centerY + hexHeight * 1.5},
+                {id: 18, x: centerX, y: centerY + hexHeight * 2}
+            ];
+
+            hexPositions.forEach(pos => {
+                const x = pos.x;
+                const y = pos.y;
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'hex empty');
+                g.setAttribute('data-hex-id', pos.id);
+
+                // Add click listener for hex
+                g.addEventListener('click', () => onHexClick(pos.id));
+
+                // Hexagon points
+                const points = [];
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i;
+                    const px = x + hexSize * Math.cos(angle);
+                    const py = y + hexSize * Math.sin(angle);
+                    points.push(`${px},${py}`);
+                }
+
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', points.join(' '));
+                g.appendChild(polygon);
+
+                // Hex ID
+                const idText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                idText.setAttribute('x', x);
+                idText.setAttribute('y', y - 15);
+                idText.setAttribute('text-anchor', 'middle');
+                idText.setAttribute('class', 'hex-id');
+                idText.textContent = pos.id;
+                g.appendChild(idText);
+
+                // Tile value (initially empty)
+                const valueText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                valueText.setAttribute('x', x);
+                valueText.setAttribute('y', y + 10);
+                valueText.setAttribute('text-anchor', 'middle');
+                valueText.setAttribute('class', 'hex-text');
+                valueText.textContent = '';
+                g.appendChild(valueText);
+
+                svg.appendChild(g);
+            });
+        }
+
+        function updateHexBoard() {
+            currentGame.board.forEach((hex, index) => {
+                const g = document.querySelector(`[data-hex-id="${index}"]`);
+                if (!g) return;
+
+                const valueText = g.querySelector('.hex-text');
+
+                if (hex.value !== null) {
+                    g.classList.remove('empty');
+                    g.classList.add(hex.owner);
+                    valueText.textContent = hex.value;
+                    valueText.classList.add(hex.owner);
+                } else {
+                    g.classList.add('empty');
+                    g.classList.remove('player1', 'player2');
+                    valueText.textContent = '';
+                    valueText.classList.remove('player1', 'player2');
+                }
+            });
+        }
+
+        function undoMove() {
+            // Can't undo if we're at or before the opening moves (first 2 moves)
+            // Exception: if starting from scratch, can undo to move 0
+            const minMoves = currentlyFromScratch ? 0 : 2;
+            if (moveHistory.length <= minMoves) return;
+
+            // Get the last move
+            const lastMove = moveHistory[moveHistory.length - 1];
+
+            // Recreate the game state by replaying all moves except the last one
+            currentGame = new HexukiGameEngineV2();
+            mctsAI = new MCTSPlayer(mctsSims);
+            minimaxSolver = useMinimaxEndgame ? new MinimaxEndgameSolverOptimized(currentGame) : null;
+
+            // Remove last move from history
+            moveHistory.pop();
+
+            // Replay all remaining moves
+            moveHistory.forEach(move => {
+                currentGame.makeMove(move.hex, move.tile);
+            });
+
+            // Clear selection
+            selectedTile = null;
+            clearValidMoves();
+
+            // Update display
+            updateDisplay();
+            document.getElementById('gameEndedMsg').innerHTML = '';
+
+            // Update buttons
+            document.getElementById('nextMoveBtn').disabled = false;
+            document.getElementById('autoPlayBtn').disabled = false;
+            document.getElementById('undoBtn').disabled = moveHistory.length <= minMoves;
+
+            const nextPlayer = currentGame.currentPlayer;
+            document.getElementById('gameInfo').textContent =
+                `Move ${moveHistory.length + 1} - P${nextPlayer}'s turn`;
+        }
+
+        function onTileClick(tileValue, player) {
+            // Only allow clicking tiles for the current player during their turn
+            if (currentGame.gameEnded || player !== currentGame.currentPlayer) return;
+
+            const tiles = player === 1 ? currentGame.player1Tiles : currentGame.player2Tiles;
+            if (!tiles.includes(tileValue)) return; // Tile already used
+
+            // Toggle selection
+            if (selectedTile === tileValue) {
+                selectedTile = null;
+                clearValidMoves();
+            } else {
+                selectedTile = tileValue;
+                showValidMoves();
+            }
+
+            updateTilesDisplay();
+        }
+
+        function onHexClick(hexId) {
+            if (currentGame.gameEnded || selectedTile === null) return;
+
+            // Check if this is a valid move
+            const hex = currentGame.board[hexId];
+            if (hex.value !== null) return; // Hex already occupied
+
+            // Verify move is valid according to game rules
+            const validMoves = currentGame.getAllValidMoves();
+            const isValid = validMoves.some(m => m.hexId === hexId && m.tileValue === selectedTile);
+
+            if (!isValid) return;
+
+            // Make the move
+            const player = currentGame.currentPlayer;
+            currentGame.makeMove(hexId, selectedTile);
+
+            moveHistory.push({
+                moveNum: moveHistory.length + 1,
+                player: player,
+                hex: hexId,
+                tile: selectedTile
+            });
+
+            // Clear selection
+            selectedTile = null;
+            clearValidMoves();
+
+            // Update display
+            updateDisplay();
+
+            // Update undo button
+            document.getElementById('undoBtn').disabled = false;
+
+            // Check if game ended
+            if (currentGame.gameEnded) {
+                handleGameEnd();
+            } else {
+                const nextPlayer = currentGame.currentPlayer;
+                document.getElementById('gameInfo').textContent =
+                    `Move ${moveHistory.length + 1} - P${nextPlayer}'s turn`;
+            }
+        }
+
+        function showValidMoves() {
+            if (selectedTile === null) return;
+
+            const validMoves = currentGame.getAllValidMoves();
+            const validHexIds = validMoves
+                .filter(m => m.tileValue === selectedTile)
+                .map(m => m.hexId);
+
+            validHexIds.forEach(hexId => {
+                const g = document.querySelector(`[data-hex-id="${hexId}"]`);
+                if (g) g.classList.add('valid-move');
+            });
+        }
+
+        function clearValidMoves() {
+            document.querySelectorAll('.hex.valid-move').forEach(g => {
+                g.classList.remove('valid-move');
+            });
+        }
+
+        /**
+         * Run MCTS with progress updates
+         * Note: May show browser "wait" dialog for high simulation counts (10k+)
+         * This is normal - just click "Wait" to let it finish
+         */
+        async function runMCTSChunked(game, totalSims) {
+            // For now, just run normally
+            // Browser may show "unresponsive script" warning for 10k+ sims
+            // User should click "Wait" to continue
+            const result = mctsAI.getBestMove(game);
+            return result;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
