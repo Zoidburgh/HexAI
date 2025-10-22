@@ -1,10 +1,12 @@
 /**
- * Hexuki Headless Game Engine V2
- * Direct translation from hexuki_ANTISYMMETRY_TEST.html
- * Pure game logic without any UI - optimized for AI training
+ * Hexuki Headless Game Engine - Free Opening Variant
+ *
+ * RULE CHANGE: P1's first move can be placed ANYWHERE on the board (bypassing adjacency)
+ * - Move 1 (P1): Can place on any of the 18 empty hexes
+ * - All other moves: Normal adjacency, chain length, and antisymmetry rules apply
  */
 
-class HexukiGameEngineV2 {
+class HexukiGameEngineFreeOpening {
     constructor() {
         this.reset();
     }
@@ -254,7 +256,8 @@ class HexukiGameEngineV2 {
     }
 
     /**
-     * Based on real game logic (lines 3725-3753)
+     * Modified for Free Opening variant
+     * P1's first move (moveCount === 0) can be placed ANYWHERE
      */
     isMoveLegal(hexId) {
         const hex = this.board[hexId];
@@ -264,6 +267,12 @@ class HexukiGameEngineV2 {
             return false;
         }
 
+        // FREE OPENING RULE: P1's first move can be placed anywhere
+        if (this.moveCount === 0) {
+            return true; // No adjacency or chain length check needed
+        }
+
+        // For all other moves: normal rules apply
         // Check if adjacent to an occupied hex
         const adjacentHexes = this.getAdjacentHexes(hexId);
         const hasAdjacentOccupied = adjacentHexes.some(id =>
@@ -482,5 +491,5 @@ class HexukiGameEngineV2 {
 
 // Export for use in AI trainer
 if (typeof window !== 'undefined') {
-    window.HexukiGameEngineV2 = HexukiGameEngineV2;
+    window.HexukiGameEngineFreeOpening = HexukiGameEngineFreeOpening;
 }

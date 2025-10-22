@@ -1,12 +1,25 @@
 /**
- * Hexuki Headless Game Engine V2
- * Direct translation from hexuki_ANTISYMMETRY_TEST.html
- * Pure game logic without any UI - optimized for AI training
+ * Hexuki Headless Game Engine - Asymmetric Tiles Variant
+ *
+ * RULE CHANGE: Each player gets 9 RANDOM tile values (1-9, can have duplicates)
+ * - Example: P1 = [3, 7, 1, 9, 3, 5, 2, 8, 1], P2 = [4, 4, 6, 9, 2, 7, 5, 8, 3]
+ * - Tests whether game balance is affected by tile distribution vs position
  */
 
-class HexukiGameEngineV2 {
+class HexukiGameEngineAsymmetric {
     constructor() {
         this.reset();
+    }
+
+    /**
+     * Generate 9 random tile values (1-9, duplicates allowed)
+     */
+    generateRandomTiles() {
+        const tiles = [];
+        for (let i = 0; i < 9; i++) {
+            tiles.push(Math.floor(Math.random() * 9) + 1); // Random 1-9
+        }
+        return tiles;
     }
 
     reset() {
@@ -48,9 +61,9 @@ class HexukiGameEngineV2 {
         this.board[9].value = 1;
         this.board[9].owner = 'neutral';
 
-        // Each player has tiles 1-9
-        this.player1Tiles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        this.player2Tiles = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        // ASYMMETRIC TILES: Each player gets 9 random values (1-9, duplicates allowed)
+        this.player1Tiles = this.generateRandomTiles();
+        this.player2Tiles = this.generateRandomTiles();
 
         // Track which tile positions have been used
         this.player1UsedPositions = new Set();
@@ -482,5 +495,5 @@ class HexukiGameEngineV2 {
 
 // Export for use in AI trainer
 if (typeof window !== 'undefined') {
-    window.HexukiGameEngineV2 = HexukiGameEngineV2;
+    window.HexukiGameEngineAsymmetric = HexukiGameEngineAsymmetric;
 }

@@ -25,9 +25,12 @@ class MCTSNode {
 
     /**
      * Clone game state deeply - OPTIMIZED VERSION
+     * Automatically detects which engine variant to use
      */
     cloneGame(game) {
-        const cloned = new HexukiGameEngineV2();
+        // Detect which engine class we're using
+        const EngineClass = game.constructor;
+        const cloned = new EngineClass();
 
         // Fast board copy - avoid JSON.parse/stringify
         cloned.board = game.board.map(hex => ({
@@ -197,12 +200,14 @@ class MCTSPlayer {
 
     /**
      * Get best move using MCTS
+     * Can be called sync or async - automatically yields to browser every 100ms
      */
-    getBestMove(game) {
+    async getBestMove(game, progressCallback = null) {
         const startTime = Date.now();
         const rootNode = new MCTSNode(game);
 
         let simulations = 0;
+        let lastYieldTime = Date.now();
 
         // Run MCTS for specified number of simulations or time limit
         while (true) {
@@ -235,6 +240,16 @@ class MCTSPlayer {
             node.update(result);
 
             simulations++;
+
+            // Yield to browser every 100ms to prevent "unresponsive script" warnings
+            const now = Date.now();
+            if (now - lastYieldTime > 100) {
+                if (progressCallback) {
+                    progressCallback(simulations, this.simulationsPerMove);
+                }
+                await new Promise(resolve => setTimeout(resolve, 0));
+                lastYieldTime = now;
+            }
         }
 
         // Select best move (most visited child - standard MCTS)
@@ -302,7 +317,7 @@ class MCTSPlayer {
 /**
  * Utility: Play a full game between two MCTS players
  */
-function playMCTSGame(player1Sims, player2Sims, verbose = false) {
+async function playMCTSGame(player1Sims, player2Sims, verbose = false) {
     const game = new HexukiGameEngineV2();
     const player1 = new MCTSPlayer(player1Sims);
     const player2 = new MCTSPlayer(player2Sims);
@@ -311,7 +326,7 @@ function playMCTSGame(player1Sims, player2Sims, verbose = false) {
 
     while (!game.gameEnded) {
         const currentPlayer = game.currentPlayer === 1 ? player1 : player2;
-        const result = currentPlayer.getBestMove(game);
+        const result = await currentPlayer.getBestMove(game);
 
         if (verbose) {
             console.log(`Player ${game.currentPlayer} move ${game.moveCount + 1}:`,
