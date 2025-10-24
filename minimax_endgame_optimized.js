@@ -344,6 +344,41 @@ class MinimaxEndgameSolverOptimized {
     }
 
     /**
+     * Evaluate position without finding best move (for MCTS rollouts)
+     * Returns score from P1's perspective
+     */
+    evaluatePosition(game, verbose = false) {
+        // Temporarily assign game
+        const originalGame = this.game;
+        this.game = game;
+
+        // Reset solver state counters (but KEEP transposition table for cache reuse!)
+        this.nodesSearched = 0;
+        this.cacheHits = 0;
+        this.killerMoves.clear();
+        // NOTE: DO NOT clear transpositionTable here - we want to reuse it across simulations!
+
+        const emptyCount = game.board.filter(h => h.value === null).length;
+        const maximizing = (game.currentPlayer === 1);
+
+        if (verbose) {
+            console.log(`Evaluating position: ${emptyCount} empty hexes, player ${game.currentPlayer} to move`);
+        }
+
+        // Run minimax to depth = emptyCount
+        const score = this.minimax(emptyCount, -Infinity, Infinity, maximizing);
+
+        // Restore original game
+        this.game = originalGame;
+
+        if (verbose) {
+            console.log(`Position score: ${score} (nodes: ${this.nodesSearched})`);
+        }
+
+        return score; // Raw score (positive = P1 advantage, negative = P2 advantage)
+    }
+
+    /**
      * Wrapper for compatibility with visualizer
      */
     getBestMove(game) {

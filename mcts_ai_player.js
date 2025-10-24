@@ -6,7 +6,7 @@
  */
 
 class MCTSNode {
-    constructor(game, parent = null, move = null, playerJustMoved = null) {
+    constructor(game, parent = null, move = null, playerJustMoved = null, config = {}, sharedMinimaxSolver = null) {
         // Clone game state for this node
         this.game = this.cloneGame(game);
         this.parent = parent;
@@ -21,6 +21,12 @@ class MCTSNode {
         // For root node, this should be null (no move yet)
         // For child nodes, it's passed from parent
         this.playerJustMoved = playerJustMoved;
+
+        // Store config for minimax rollouts
+        this.config = config;
+
+        // OPTIMIZATION: Store reference to shared minimax solver
+        this.sharedMinimaxSolver = sharedMinimaxSolver;
     }
 
     /**
@@ -85,8 +91,8 @@ class MCTSNode {
         const playerMakingMove = childGame.currentPlayer; // Save before move switches it
         childGame.makeMove(move.hexId, move.tileValue);
 
-        // Pass the player who made the move to reach this child state
-        const child = new MCTSNode(childGame, this, move, playerMakingMove);
+        // Pass the player who made the move to reach this child state (and config + shared solver)
+        const child = new MCTSNode(childGame, this, move, playerMakingMove, this.config, this.sharedMinimaxSolver);
         this.untriedMoves = this.untriedMoves.filter(m =>
             !(m.hexId === move.hexId && m.tileValue === move.tileValue)
         );
@@ -97,23 +103,53 @@ class MCTSNode {
     /**
      * Simulate a random game to completion from this state
      * Returns result from PLAYER 1's perspective (always)
+     *
+     * @param {boolean} useMinimaxRollouts - Use minimax for endgame evaluation
+     * @param {number} minimaxThreshold - Switch to minimax when <= this many empty hexes
      */
-    simulate() {
+    simulate(useMinimaxRollouts = false, minimaxThreshold = 6) {
         const simGame = this.cloneGame(this.game);
 
+        // PHASE 1: Random rollout until threshold
         while (!simGame.gameEnded) {
-            const moves = simGame.getAllValidMoves();
+            const emptyHexes = simGame.board.filter(h => h.value === null).length;
 
+            // Switch to minimax when <= threshold empty hexes
+            if (useMinimaxRollouts && emptyHexes <= minimaxThreshold) {
+                break;
+            }
+
+            const moves = simGame.getAllValidMoves();
             if (moves.length === 0) {
                 break; // Should not happen but safety check
             }
 
-            // Pure random for speed (can add smart heuristics later)
+            // Pure random for speed
             const move = moves[Math.floor(Math.random() * moves.length)];
             simGame.makeMove(move.hexId, move.tileValue);
         }
 
-        // ALWAYS return from Player 1's perspective
+        // PHASE 2: Minimax evaluation (if enabled and not already game over)
+        if (useMinimaxRollouts && !simGame.gameEnded) {
+            // OPTIMIZATION: Reuse shared minimax solver instead of creating new one
+            // This avoids rebuilding Zobrist tables and shares transposition table
+            if (!this.sharedMinimaxSolver) {
+                // Fallback: create solver if not provided (shouldn't happen)
+                this.sharedMinimaxSolver = new MinimaxEndgameSolverOptimized(simGame);
+            }
+
+            const score = this.sharedMinimaxSolver.evaluatePosition(simGame, false);
+
+            // Convert minimax score to MCTS probability
+            // score > 0 = P1 wins → return 1.0
+            // score < 0 = P2 wins → return 0.0
+            // score ≈ 0 = draw → return 0.5
+            if (score > 0) return 1.0;
+            if (score < 0) return 0.0;
+            return 0.5;
+        }
+
+        // PHASE 3: Fallback to random evaluation (if minimax not used or game already over)
         const scores = simGame.calculateScores();
         const scoreDiff = scores.player1 - scores.player2;
 
@@ -186,9 +222,25 @@ class MCTSNode {
  * MCTS AI Player
  */
 class MCTSPlayer {
-    constructor(simulationsPerMove = 10000, timeLimit = null) {
+    constructor(simulationsPerMove = 10000, timeLimit = null, config = {}) {
         this.simulationsPerMove = simulationsPerMove;
         this.timeLimit = timeLimit; // Optional: time limit in milliseconds
+
+        // Configuration for hybrid minimax rollouts
+        this.config = {
+            useMinimaxRollouts: config.useMinimaxRollouts || false,
+            minimaxThreshold: config.minimaxThreshold || 6,
+            ...config
+        };
+
+        // OPTIMIZATION: Create shared minimax solver for reuse across all simulations
+        // This avoids rebuilding Zobrist tables and allows transposition table sharing
+        this.sharedMinimaxSolver = null;
+        if (this.config.useMinimaxRollouts) {
+            // Will be initialized with proper game state on first use
+            this.sharedMinimaxSolver = new MinimaxEndgameSolverOptimized(null);
+        }
+
         this.stats = {
             totalSimulations: 0,
             totalTime: 0,
@@ -204,7 +256,13 @@ class MCTSPlayer {
      */
     async getBestMove(game, progressCallback = null) {
         const startTime = Date.now();
-        const rootNode = new MCTSNode(game);
+
+        // Clear transposition table between moves for fresh evaluation
+        if (this.sharedMinimaxSolver) {
+            this.sharedMinimaxSolver.transpositionTable.clear();
+        }
+
+        const rootNode = new MCTSNode(game, null, null, null, this.config, this.sharedMinimaxSolver);
 
         let simulations = 0;
         let lastYieldTime = Date.now();
@@ -233,8 +291,11 @@ class MCTSPlayer {
                 node = node.addChild(move);
             }
 
-            // 3. Simulation: play out random game
-            const result = node.simulate();
+            // 3. Simulation: play out random game (with optional minimax rollouts)
+            const result = node.simulate(
+                node.config.useMinimaxRollouts || false,
+                node.config.minimaxThreshold || 6
+            );
 
             // 4. Backpropagation: update nodes with result
             node.update(result);

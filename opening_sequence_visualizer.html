@@ -440,6 +440,16 @@
             <strong>⚠️ Note:</strong> High simulation counts (10k+) may trigger browser "unresponsive script" warnings. Click "Wait" to let the AI finish thinking. This is normal behavior.
         </div>
         <div class="select-row">
+            <label>🚀 MCTS Engine:</label>
+            <select id="mctsEngineSelect">
+                <option value="javascript">JavaScript (slower, more tested)</option>
+                <option value="cpp" selected>C++ WebAssembly (36-80× faster!) ⚡</option>
+            </select>
+            <div style="margin-top: 5px; padding: 8px; background: #e3f2fd; border-radius: 4px; font-size: 0.85em; color: #1565c0;">
+                <strong>C++ Engine:</strong> Runs 36-80× faster than JavaScript! Same algorithm, just compiled to native WebAssembly.
+            </div>
+        </div>
+        <div class="select-row">
             <label>MCTS Simulations per Move:</label>
             <select id="mctsSimsSelect">
                 <option value="100">100 (Fast preview)</option>
@@ -453,6 +463,11 @@
                 <option value="10000">10000 (Maximum quality - slow)</option>
                 <option value="15000">15000 (Maximum quality - very slow)</option>
                 <option value="20000">20000 (Extreme quality - extremely slow)</option>
+                <option value="50000">50000 (C++ only - ultra quality)</option>
+                <option value="100000">100000 (C++ only - maximum)</option>
+                <option value="500000">500000 (C++ only - extreme)</option>
+                <option value="1000000">1000000 (C++ only - 1M sims)</option>
+                <option value="2000000">2000000 (C++ only - 2M sims)</option>
             </select>
         </div>
         <div class="select-row">
@@ -463,8 +478,35 @@
         </div>
         <div class="select-row" id="minimaxThresholdRow">
             <label>Minimax starts at <span id="thresholdValue">6</span> empty hexes:</label>
-            <input type="range" id="minimaxThreshold" min="0" max="10" value="6"
+            <input type="range" id="minimaxThreshold" min="0" max="18" value="6"
                    style="width: 100%; margin-top: 5px;">
+        </div>
+        <div class="select-row">
+            <label>🚀 Minimax Engine:</label>
+            <select id="minimaxEngineSelect">
+                <option value="javascript">JavaScript (slower, more tested)</option>
+                <option value="cpp" selected>C++ WebAssembly (555× faster!) ⚡</option>
+            </select>
+        </div>
+
+        <div class="select-row">
+            <label>
+                <input type="checkbox" id="useMinimaxRolloutsCheckboxGlobal">
+                <strong>🚀 Hybrid MCTS (Minimax-Terminated Rollouts)</strong>
+            </label>
+            <div id="minimaxRolloutsSettingsGlobal" style="margin-top: 5px; margin-left: 20px; padding: 8px; background: #e8f5e9; border-radius: 4px; display: none;">
+                <div style="color: #666; font-size: 0.85em; margin-bottom: 8px;">
+                    <strong>EXPERIMENTAL:</strong> Uses random MCTS rollouts until few hexes remain, then switches to perfect minimax evaluation. This makes MCTS tactically sharper but 2-3× slower.
+                </div>
+                <label style="display: inline-block;">
+                    Switch to minimax at:
+                    <input type="number" id="minimaxThresholdGlobal" min="0" max="18" value="6" style="width: 60px; padding: 4px; margin-left: 5px; border-radius: 4px; border: 1px solid #ddd;">
+                    empty hexes
+                </label>
+                <div style="margin-top: 5px; color: #555; font-size: 0.8em;">
+                    Lower = faster but less tactical | Higher = slower but more accurate endgame evaluation
+                </div>
+            </div>
         </div>
 
         <div class="select-row">
@@ -477,8 +519,22 @@
         <div class="select-row">
             <label>
                 <input type="checkbox" id="useAsymmetricTilesCheckbox">
-                Asymmetric Tiles (random 1-9 values, can have duplicates)
+                Asymmetric Tiles (can have non-standard tile sets)
             </label>
+        </div>
+
+        <div id="customTilesSection" style="margin-top: 15px; padding: 15px; background: #f0f8ff; border-radius: 8px; display: none;">
+            <h3 style="margin: 0 0 10px 0; font-size: 1.1em;">Custom Tile Values</h3>
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; font-weight: 500; margin-bottom: 5px;">Player 1 Tiles (comma-separated, 1-9):</label>
+                <input type="text" id="p1CustomTiles" value="1,2,3,4,5,6,7,8,9" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-family: 'JetBrains Mono', monospace;">
+                <div style="font-size: 0.85em; color: #666; margin-top: 3px;">Default: 1,2,3,4,5,6,7,8,9 (standard symmetric)</div>
+            </div>
+            <div>
+                <label style="display: block; font-weight: 500; margin-bottom: 5px;">Player 2 Tiles (comma-separated, 1-9):</label>
+                <input type="text" id="p2CustomTiles" value="1,2,3,4,5,6,7,8,9" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-family: 'JetBrains Mono', monospace;">
+                <div style="font-size: 0.85em; color: #666; margin-top: 3px;">Default: 1,2,3,4,5,6,7,8,9 (standard symmetric)</div>
+            </div>
         </div>
 
         <div style="text-align: center; margin-top: 20px;">
@@ -568,9 +624,14 @@
                 </label>
             </div>
             <div class="select-row" id="exhaustiveSettings" style="display: none; margin-left: 20px; margin-top: 10px; padding: 10px; background: #f0f8ff; border-radius: 4px;">
-                <label>Games per opening:</label>
-                <input type="number" id="gamesPerOpening" min="1" max="100" value="50" style="width: 80px; padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
-                <span style="margin-left: 10px; color: #666; font-size: 0.85em;">(Will test all 54 standard openings or 162 with free opening)</span>
+                <div id="gamesPerOpeningRow">
+                    <label>Games per opening:</label>
+                    <input type="number" id="gamesPerOpening" min="1" max="100" value="50" style="width: 80px; padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
+                    <span style="margin-left: 10px; color: #666; font-size: 0.85em;">(Will test all 54 standard openings or 162 with free opening)</span>
+                </div>
+                <div id="totalGamesDisplay" style="margin-top: 10px; padding: 8px; background: #e3f2fd; border-radius: 4px; font-weight: bold; display: none;">
+                    Total games to run: <span id="totalGamesCount">0</span>
+                </div>
                 <div style="margin-top: 10px;">
                     <label>
                         <input type="checkbox" id="strongOpeningsOnlyCheckbox">
@@ -591,6 +652,15 @@
                 </div>
                 <div style="margin-top: 10px;">
                     <label>
+                        <input type="checkbox" id="top10OpeningsCheckbox">
+                        <strong>Top 10 Promising Openings</strong> (Test best-validated openings)
+                    </label>
+                    <div id="top10OpeningsInfo" style="margin-top: 5px; padding: 8px; background: #fff3e0; border-radius: 4px; display: none; font-size: 0.85em;">
+                        Tests <strong>10 openings</strong>: h11t9 (72.4%), h7t9 (68.4%), h6t7 (66.1%), h7t8 (63.5%), h6t5 (60.7%), h7t6 (64.1%), h6t6 (67.5%), h12t6 (60.7%), h10t2 (76.5%), h10t3 (75.0%)
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
                         <input type="checkbox" id="doubleMCTSForP2Move2Checkbox">
                         <strong>Double MCTS for P2's first response</strong> (P2 move 2 gets 2× simulations)
                     </label>
@@ -605,6 +675,15 @@
                     </label>
                     <div style="margin-top: 5px; color: #666; font-size: 0.85em;">
                         If P2 tries a response and loses, that response is blacklisted for the rest of the simulation
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>
+                        <input type="checkbox" id="mutualLearningModeCheckbox">
+                        <strong>Both Players Learn from Losses</strong> (Context-aware sequence blacklisting)
+                    </label>
+                    <div style="margin-top: 5px; color: #666; font-size: 0.85em;">
+                        Both players blacklist full 6-move sequences that led to losses. Each player learns their own moves in the context of what the opponent played. P1 won't repeat move 3 when P2 plays the same move 2, etc.
                     </div>
                 </div>
             </div>
@@ -667,6 +746,7 @@
     <script src="hexuki_game_engine_asymmetric.js"></script>
     <script src="mcts_ai_player.js"></script>
     <script src="minimax_endgame_optimized.js"></script>
+    <script src="hexuki.js"></script> <!-- C++ WASM Engine -->
     <script>
         let layer1Data = null;
         let layer2Data = null;
@@ -684,6 +764,23 @@
         let mctsSims = 1000;
         let minimaxThreshold = 6;
         let useMinimaxEndgame = true;
+        let useMinimaxRollouts = false; // Hybrid MCTS with minimax-terminated rollouts
+        let mctsEngine = 'cpp'; // 'javascript' or 'cpp'
+        let minimaxEngine = 'cpp'; // 'javascript' or 'cpp'
+        let wasmModule = null; // C++ WASM module
+
+        // Initialize C++ WASM module
+        HexukiWasm().then(function(module) {
+            wasmModule = module;
+            wasmModule.initialize();
+            console.log('✓ C++ WASM engine loaded and initialized');
+        }).catch(function(err) {
+            console.error('Failed to load C++ WASM engine:', err);
+            mctsEngine = 'javascript'; // Fallback to JavaScript
+            document.getElementById('mctsEngineSelect').value = 'javascript';
+            alert('Failed to load C++ engine. Using JavaScript instead.');
+        });
+
         let useFreeOpening = false;
         let useAsymmetricTiles = false;
         let useExhaustiveOpening = false;
@@ -694,14 +791,40 @@
         const goodOpenings = ['h6t6', 'h11t9', 'h7t9', 'h7t8', 'h6t7', 'h6t5', 'h6t9', 'h7t6',
                               'h12t6', 'h12t7', 'h7t7', 'h12t5', 'h11t7', 'h4t6', 'h7t5',
                               'h14t4', 'h6t3', 'h11t8', 'h12t4'];
+        let useTop10Openings = false;
+        const top10Openings = ['h11t9', 'h7t9', 'h6t7', 'h7t8', 'h6t5', 'h7t6', 'h6t6', 'h12t6', 'h10t2', 'h10t3'];
         let doubleMCTSForP2Move2 = false;
         let p2ResponseBlacklist = {}; // Track P2 responses that lost for each P1 opening (or global array in random mode)
         let useP2LearningMode = false;
+        let useMutualLearning = false;
+        let mutualBlacklist = { p1: {}, p2: {} }; // Mutual learning: track 3-move sequences for both players
 
         // Manual move state
         let selectedTile = null;
         let manualMoveMode = false;
         let currentlyFromScratch = false;
+
+        // Helper function to parse and apply custom tiles
+        function applyCustomTiles(game) {
+            const p1Input = document.getElementById('p1CustomTiles').value.trim();
+            const p2Input = document.getElementById('p2CustomTiles').value.trim();
+
+            // Parse P1 tiles
+            if (p1Input) {
+                const p1Tiles = p1Input.split(',').map(s => parseInt(s.trim())).filter(n => n >= 1 && n <= 9);
+                if (p1Tiles.length > 0) {
+                    game.player1Tiles = p1Tiles;
+                }
+            }
+
+            // Parse P2 tiles
+            if (p2Input) {
+                const p2Tiles = p2Input.split(',').map(s => parseInt(s.trim())).filter(n => n >= 1 && n <= 9);
+                if (p2Tiles.length > 0) {
+                    game.player2Tiles = p2Tiles;
+                }
+            }
+        }
 
         // File loading
         document.getElementById('layer1File').addEventListener('change', async (e) => {
@@ -757,6 +880,39 @@
                 option.textContent = `#${index + 1}: Hex ${opening.hex}-Tile ${opening.tile} (${(opening.winRate * 100).toFixed(1)}% Layer 1)`;
                 select.appendChild(option);
             });
+        }
+
+        function updateTotalGamesDisplay() {
+            if (!useExhaustiveOpening) {
+                document.getElementById('totalGamesDisplay').style.display = 'none';
+                return;
+            }
+
+            let totalGames = 0;
+            let description = '';
+
+            if (useRandomGoodOpenings) {
+                // Random mode uses "Number of Games" field
+                const gameCount = parseInt(document.getElementById('simGameCount').value) || 100;
+                totalGames = gameCount;
+                description = `${totalGames} games (randomly selected from ${goodOpenings.length} good openings)`;
+            } else if (useTop10Openings) {
+                // Top 10 openings: 10 × games per opening
+                totalGames = 10 * gamesPerOpening;
+                description = `10 openings × ${gamesPerOpening} games = ${totalGames} total`;
+            } else if (useStrongOpeningsOnly) {
+                // Strong openings: 5 × games per opening
+                totalGames = 5 * gamesPerOpening;
+                description = `5 openings × ${gamesPerOpening} games = ${totalGames} total`;
+            } else {
+                // All openings: 54 × games per opening (or 162 with free opening)
+                const numOpenings = useFreeOpening ? 162 : 54;
+                totalGames = numOpenings * gamesPerOpening;
+                description = `${numOpenings} openings × ${gamesPerOpening} games = ${totalGames} total`;
+            }
+
+            document.getElementById('totalGamesCount').textContent = description;
+            document.getElementById('totalGamesDisplay').style.display = 'block';
         }
 
         document.getElementById('p1OpeningSelect').addEventListener('change', (e) => {
@@ -816,6 +972,30 @@
             mctsSims = parseInt(e.target.value);
         });
 
+        document.getElementById('mctsEngineSelect').addEventListener('change', (e) => {
+            mctsEngine = e.target.value;
+            console.log(`Switched to ${mctsEngine} MCTS engine`);
+
+            // Warn if C++ engine not loaded
+            if (mctsEngine === 'cpp' && !wasmModule) {
+                alert('C++ WASM engine not loaded yet. Please wait or use JavaScript engine.');
+                e.target.value = 'javascript';
+                mctsEngine = 'javascript';
+            }
+        });
+
+        document.getElementById('minimaxEngineSelect').addEventListener('change', (e) => {
+            minimaxEngine = e.target.value;
+            console.log(`Switched to ${minimaxEngine} Minimax engine`);
+
+            // Warn if C++ engine not loaded
+            if (minimaxEngine === 'cpp' && !wasmModule) {
+                alert('C++ WASM engine not loaded yet. Please wait or use JavaScript engine.');
+                e.target.value = 'javascript';
+                minimaxEngine = 'javascript';
+            }
+        });
+
         document.getElementById('useMinimaxCheckbox').addEventListener('change', (e) => {
             useMinimaxEndgame = e.target.checked;
             document.getElementById('minimaxThresholdRow').style.display =
@@ -827,22 +1007,43 @@
             document.getElementById('thresholdValue').textContent = minimaxThreshold;
         });
 
+        document.getElementById('useMinimaxRolloutsCheckboxGlobal').addEventListener('change', (e) => {
+            useMinimaxRollouts = e.target.checked;
+            document.getElementById('minimaxRolloutsSettingsGlobal').style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        document.getElementById('minimaxThresholdGlobal').addEventListener('change', (e) => {
+            const threshold = parseInt(e.target.value);
+            if (!isNaN(threshold) && threshold >= 0 && threshold <= 18) {
+                minimaxThreshold = threshold;
+                // Sync with the old threshold input if it exists
+                const oldThresholdInput = document.getElementById('minimaxThreshold');
+                if (oldThresholdInput) {
+                    oldThresholdInput.value = threshold;
+                }
+            }
+        });
+
         document.getElementById('useFreeOpeningCheckbox').addEventListener('change', (e) => {
             useFreeOpening = e.target.checked;
+            updateTotalGamesDisplay();  // Update display when free opening mode changes
         });
 
         document.getElementById('useAsymmetricTilesCheckbox').addEventListener('change', (e) => {
             useAsymmetricTiles = e.target.checked;
+            document.getElementById('customTilesSection').style.display = e.target.checked ? 'block' : 'none';
         });
 
         document.getElementById('exhaustiveOpeningCheckbox').addEventListener('change', (e) => {
             useExhaustiveOpening = e.target.checked;
             document.getElementById('exhaustiveSettings').style.display = e.target.checked ? 'block' : 'none';
             document.getElementById('normalGameCount').style.display = e.target.checked ? 'none' : 'block';
+            updateTotalGamesDisplay();
         });
 
         document.getElementById('gamesPerOpening').addEventListener('change', (e) => {
             gamesPerOpening = parseInt(e.target.value);
+            updateTotalGamesDisplay();
         });
 
         document.getElementById('strongOpeningsOnlyCheckbox').addEventListener('change', (e) => {
@@ -854,7 +1055,10 @@
                 document.getElementById('randomGoodOpeningsCheckbox').checked = false;
                 useRandomGoodOpenings = false;
                 document.getElementById('randomGoodOpeningsInfo').style.display = 'none';
+                document.getElementById('gamesPerOpeningRow').style.display = 'block'; // Show again
             }
+
+            updateTotalGamesDisplay();
         });
 
         document.getElementById('randomGoodOpeningsCheckbox').addEventListener('change', (e) => {
@@ -867,14 +1071,69 @@
                 useStrongOpeningsOnly = false;
                 document.getElementById('strongOpeningsInfo').style.display = 'none';
             }
+
+            // Hide "Games per opening" when Random Good Openings is checked
+            document.getElementById('gamesPerOpeningRow').style.display = e.target.checked ? 'none' : 'block';
+
+            // Update total games display
+            updateTotalGamesDisplay();
+        });
+
+        document.getElementById('simGameCount').addEventListener('change', (e) => {
+            updateTotalGamesDisplay();
         });
 
         document.getElementById('doubleMCTSForP2Move2Checkbox').addEventListener('change', (e) => {
             doubleMCTSForP2Move2 = e.target.checked;
         });
 
+        document.getElementById('top10OpeningsCheckbox').addEventListener('change', (e) => {
+            useTop10Openings = e.target.checked;
+            document.getElementById('top10OpeningsInfo').style.display = e.target.checked ? 'block' : 'none';
+
+            // Mutually exclusive with strong openings and random good openings
+            if (e.target.checked) {
+                if (useStrongOpeningsOnly) {
+                    document.getElementById('strongOpeningsOnlyCheckbox').checked = false;
+                    useStrongOpeningsOnly = false;
+                    document.getElementById('strongOpeningsInfo').style.display = 'none';
+                }
+                if (useRandomGoodOpenings) {
+                    document.getElementById('randomGoodOpeningsCheckbox').checked = false;
+                    useRandomGoodOpenings = false;
+                    document.getElementById('randomGoodOpeningsInfo').style.display = 'none';
+                    document.getElementById('gamesPerOpeningRow').style.display = 'block';
+                }
+            }
+
+            updateTotalGamesDisplay();
+        });
+
         document.getElementById('p2LearningModeCheckbox').addEventListener('change', (e) => {
             useP2LearningMode = e.target.checked;
+
+            // Mutually exclusive with mutual learning
+            if (e.target.checked && useMutualLearning) {
+                document.getElementById('mutualLearningModeCheckbox').checked = false;
+                useMutualLearning = false;
+            }
+        });
+
+        document.getElementById('mutualLearningModeCheckbox').addEventListener('change', (e) => {
+            useMutualLearning = e.target.checked;
+
+            // Mutually exclusive with P2-only learning
+            if (e.target.checked && useP2LearningMode) {
+                document.getElementById('p2LearningModeCheckbox').checked = false;
+                useP2LearningMode = false;
+            }
+        });
+
+        document.getElementById('minimaxThreshold').addEventListener('change', (e) => {
+            const threshold = parseInt(e.target.value);
+            if (!isNaN(threshold) && threshold >= 0 && threshold <= 18) {
+                minimaxThreshold = threshold;
+            }
         });
 
         document.getElementById('startGameBtn').addEventListener('click', () => startNewGame(false));
@@ -910,12 +1169,17 @@
             // Initialize game with correct engine variant
             if (useAsymmetricTiles) {
                 currentGame = new HexukiGameEngineAsymmetric();
+                // Apply custom tiles if specified
+                applyCustomTiles(currentGame);
             } else if (useFreeOpening) {
                 currentGame = new HexukiGameEngineFreeOpening();
             } else {
                 currentGame = new HexukiGameEngineV2();
             }
-            mctsAI = new MCTSPlayer(mctsSims);
+            mctsAI = new MCTSPlayer(mctsSims, null, {
+                useMinimaxRollouts: useMinimaxRollouts,
+                minimaxThreshold: minimaxThreshold
+            });
             minimaxSolver = useMinimaxEndgame ? new MinimaxEndgameSolverOptimized(currentGame) : null;
             moveHistory = [];
             isAutoPlaying = false;
@@ -1001,7 +1265,7 @@
             // Get AI move with chunked processing to avoid blocking
             let result;
             if (useMinimax) {
-                result = minimaxSolver.getBestMove(currentGame);
+                result = runMinimax(currentGame, 20);
             } else {
                 // Run MCTS in chunks to prevent browser "unresponsive script" warning
                 result = await runMCTSChunked(currentGame, mctsSims);
@@ -1100,42 +1364,95 @@
         }
 
         function updateTilesDisplay() {
-            // Update P1 tiles
-            const p1Display = document.getElementById('p1TilesDisplay');
-            p1Display.innerHTML = '';
-            for (let i = 1; i <= 9; i++) {
-                const chip = document.createElement('div');
-                chip.className = 'tile-chip';
-                chip.textContent = i;
-                if (!currentGame.player1Tiles.includes(i)) {
-                    chip.classList.add('used');
-                } else {
-                    // Add click listener for available tiles
-                    chip.addEventListener('click', () => onTileClick(i, 1));
-                    if (selectedTile === i && currentGame.currentPlayer === 1) {
-                        chip.classList.add('selected');
-                    }
-                }
-                p1Display.appendChild(chip);
-            }
+            // Get all tiles (both used and unused) for each player
+            // In asymmetric mode, we need to track which tiles were initially available
+            const p1AllTiles = [...new Set([...currentGame.player1Tiles, ...Array.from({length: 9}, (_, i) => i + 1)])];
+            const p2AllTiles = [...new Set([...currentGame.player2Tiles, ...Array.from({length: 9}, (_, i) => i + 1)])];
 
-            // Update P2 tiles
-            const p2Display = document.getElementById('p2TilesDisplay');
-            p2Display.innerHTML = '';
-            for (let i = 1; i <= 9; i++) {
-                const chip = document.createElement('div');
-                chip.className = 'tile-chip';
-                chip.textContent = i;
-                if (!currentGame.player2Tiles.includes(i)) {
-                    chip.classList.add('used');
-                } else {
-                    // Add click listener for available tiles
-                    chip.addEventListener('click', () => onTileClick(i, 2));
-                    if (selectedTile === i && currentGame.currentPlayer === 2) {
-                        chip.classList.add('selected');
+            // For asymmetric games, only show tiles that are in the player's actual tile set
+            if (useAsymmetricTiles) {
+                // Get the original tiles from the input fields to know what to display
+                const p1Input = document.getElementById('p1CustomTiles').value.trim();
+                const p2Input = document.getElementById('p2CustomTiles').value.trim();
+                const p1CustomSet = p1Input ? p1Input.split(',').map(s => parseInt(s.trim())).filter(n => n >= 1 && n <= 9) : [1,2,3,4,5,6,7,8,9];
+                const p2CustomSet = p2Input ? p2Input.split(',').map(s => parseInt(s.trim())).filter(n => n >= 1 && n <= 9) : [1,2,3,4,5,6,7,8,9];
+
+                // Update P1 tiles
+                const p1Display = document.getElementById('p1TilesDisplay');
+                p1Display.innerHTML = '';
+                p1CustomSet.forEach((tileValue, idx) => {
+                    const chip = document.createElement('div');
+                    chip.className = 'tile-chip';
+                    chip.textContent = tileValue;
+                    if (!currentGame.player1Tiles.includes(tileValue)) {
+                        chip.classList.add('used');
+                    } else {
+                        // Add click listener for available tiles
+                        chip.addEventListener('click', () => onTileClick(tileValue, 1));
+                        if (selectedTile === tileValue && currentGame.currentPlayer === 1) {
+                            chip.classList.add('selected');
+                        }
                     }
+                    p1Display.appendChild(chip);
+                });
+
+                // Update P2 tiles
+                const p2Display = document.getElementById('p2TilesDisplay');
+                p2Display.innerHTML = '';
+                p2CustomSet.forEach((tileValue, idx) => {
+                    const chip = document.createElement('div');
+                    chip.className = 'tile-chip';
+                    chip.textContent = tileValue;
+                    if (!currentGame.player2Tiles.includes(tileValue)) {
+                        chip.classList.add('used');
+                    } else {
+                        // Add click listener for available tiles
+                        chip.addEventListener('click', () => onTileClick(tileValue, 2));
+                        if (selectedTile === tileValue && currentGame.currentPlayer === 2) {
+                            chip.classList.add('selected');
+                        }
+                    }
+                    p2Display.appendChild(chip);
+                });
+            } else {
+                // Standard mode - show tiles 1-9
+                // Update P1 tiles
+                const p1Display = document.getElementById('p1TilesDisplay');
+                p1Display.innerHTML = '';
+                for (let i = 1; i <= 9; i++) {
+                    const chip = document.createElement('div');
+                    chip.className = 'tile-chip';
+                    chip.textContent = i;
+                    if (!currentGame.player1Tiles.includes(i)) {
+                        chip.classList.add('used');
+                    } else {
+                        // Add click listener for available tiles
+                        chip.addEventListener('click', () => onTileClick(i, 1));
+                        if (selectedTile === i && currentGame.currentPlayer === 1) {
+                            chip.classList.add('selected');
+                        }
+                    }
+                    p1Display.appendChild(chip);
                 }
-                p2Display.appendChild(chip);
+
+                // Update P2 tiles
+                const p2Display = document.getElementById('p2TilesDisplay');
+                p2Display.innerHTML = '';
+                for (let i = 1; i <= 9; i++) {
+                    const chip = document.createElement('div');
+                    chip.className = 'tile-chip';
+                    chip.textContent = i;
+                    if (!currentGame.player2Tiles.includes(i)) {
+                        chip.classList.add('used');
+                    } else {
+                        // Add click listener for available tiles
+                        chip.addEventListener('click', () => onTileClick(i, 2));
+                        if (selectedTile === i && currentGame.currentPlayer === 2) {
+                            chip.classList.add('selected');
+                        }
+                    }
+                    p2Display.appendChild(chip);
+                }
             }
         }
 
@@ -1268,7 +1585,10 @@
 
             // Recreate the game state by replaying all moves except the last one
             currentGame = new HexukiGameEngineV2();
-            mctsAI = new MCTSPlayer(mctsSims);
+            mctsAI = new MCTSPlayer(mctsSims, null, {
+                useMinimaxRollouts: useMinimaxRollouts,
+                minimaxThreshold: minimaxThreshold
+            });
             minimaxSolver = useMinimaxEndgame ? new MinimaxEndgameSolverOptimized(currentGame) : null;
 
             // Remove last move from history
@@ -1381,26 +1701,103 @@
         }
 
         /**
+         * Run Minimax
+         * Routes to either JavaScript or C++ WASM engine based on minimaxEngine setting
+         */
+        function runMinimax(game, depth = 20, jsMinimax = null) {
+            // Use C++ WASM engine if selected and available
+            if (minimaxEngine === 'cpp' && wasmModule) {
+                // Convert game state to C++ format
+                const position = gameToPositionString(game);
+                wasmModule.loadPosition(position);
+
+                // Run C++ Minimax
+                const resultJson = wasmModule.minimaxFindBestMove(depth, 30000);
+                const result = JSON.parse(resultJson);
+
+                // Return in format expected by caller: { move: { hexId, tileValue } }
+                return {
+                    move: {
+                        hexId: result.hexId,
+                        tileValue: result.tileValue
+                    },
+                    score: result.score,
+                    depth: result.depth,
+                    nodes: result.nodes
+                };
+            } else {
+                // Use JavaScript Minimax
+                const solver = jsMinimax || minimaxSolver;
+                return solver.getBestMove(game);
+            }
+        }
+
+        /**
+         * Convert JavaScript game state to C++ position string format
+         * Format: "h9:1,h6:5|p1:2,4,8|p2:6,7,9|turn:1"
+         */
+        function gameToPositionString(game) {
+            // Build hex placements (e.g., "h9:1,h6:5")
+            const hexPlacements = [];
+            for (const hex of game.board) {
+                if (hex.value !== null) {
+                    hexPlacements.push(`h${hex.id}:${hex.value}`);
+                }
+            }
+
+            // Build player tiles (e.g., "p1:2,4,8")
+            const p1Tiles = game.player1Tiles.join(',');
+            const p2Tiles = game.player2Tiles.join(',');
+
+            // Combine into position string
+            const position = `${hexPlacements.join(',')}|p1:${p1Tiles}|p2:${p2Tiles}|turn:${game.currentPlayer}`;
+            return position;
+        }
+
+        /**
          * Run MCTS with progress updates
+         * Routes to either JavaScript or C++ WASM engine based on mctsEngine setting
          * Note: May show browser "wait" dialog for high simulation counts (10k+)
          * This is normal - just click "Wait" to let it finish
          */
         async function runMCTSChunked(game, totalSims, aiPlayer = null) {
-            // Use provided AI player or fall back to global
-            const ai = aiPlayer || mctsAI;
+            // Use C++ WASM engine if selected and available
+            if (mctsEngine === 'cpp' && wasmModule) {
+                // Convert game state to C++ format
+                const position = gameToPositionString(game);
+                wasmModule.loadPosition(position);
 
-            // Run in chunks to prevent browser freezing
-            const chunkSize = 100; // Process 100 sims at a time
-            if (totalSims <= 1000) {
-                // Small sim count - just run it
-                const result = await ai.getBestMove(game);
-                return result;
+                // Run C++ MCTS with exact simulation count requested
+                const resultJson = wasmModule.mctsFindBestMove(totalSims, 0, false);
+                const result = JSON.parse(resultJson);
+
+                // Return in format expected by caller: { move: { hexId, tileValue } }
+                return {
+                    move: {
+                        hexId: result.hexId,
+                        tileValue: result.tileValue
+                    },
+                    visits: result.visits,
+                    winRate: result.winRate,
+                    simulations: result.simulations
+                };
             } else {
-                // Large sim count - chunk it
-                // For now, just run normally with periodic yields
-                await sleep(0); // Yield to browser
-                const result = await ai.getBestMove(game);
-                return result;
+                // Use JavaScript MCTS
+                const ai = aiPlayer || mctsAI;
+
+                // Run in chunks to prevent browser freezing
+                const chunkSize = 100; // Process 100 sims at a time
+                if (totalSims <= 1000) {
+                    // Small sim count - just run it
+                    const result = await ai.getBestMove(game);
+                    return result;
+                } else {
+                    // Large sim count - chunk it
+                    // For now, just run normally with periodic yields
+                    await sleep(0); // Yield to browser
+                    const result = await ai.getBestMove(game);
+                    return result;
+                }
             }
         }
 
@@ -1439,6 +1836,9 @@
 
             // Reset P2 response blacklist for new simulation
             p2ResponseBlacklist = {};
+
+            // Reset mutual learning blacklist for new simulation
+            mutualBlacklist = { p1: {}, p2: {} };
 
             // Show results panel and disable controls
             document.getElementById('simulationResults').style.display = 'block';
@@ -1509,7 +1909,11 @@
                 }));
 
                 // Filter for strong openings only if checkbox is checked
-                if (useStrongOpeningsOnly) {
+                if (useTop10Openings) {
+                    // Top 10 promising openings mode
+                    allP1Openings = allP1Openings.filter(opening => top10Openings.includes(opening.key));
+                    console.log(`Top 10 openings mode: Testing ${allP1Openings.length} openings:`, allP1Openings.map(o => o.key).join(', '));
+                } else if (useStrongOpeningsOnly) {
                     const strongOpenings = ['h12t5', 'h12t6', 'h12t7', 'h6t5', 'h6t6'];
                     allP1Openings = allP1Openings.filter(opening => strongOpenings.includes(opening.key));
                     console.log(`Strong openings mode: Testing only ${allP1Openings.length} openings:`, allP1Openings.map(o => o.key).join(', '));
@@ -1856,11 +2260,14 @@
                     gamesPerOpening: gamesPerOpening,
                     useStrongOpeningsOnly: useStrongOpeningsOnly,
                     useRandomGoodOpenings: useRandomGoodOpenings,
+                    useTop10Openings: useTop10Openings,
                     doubleMCTSForP2Move2: doubleMCTSForP2Move2,
                     p2Move2Simulations: doubleMCTSForP2Move2 ? mctsSims * 2 : mctsSims,
-                    useP2LearningMode: useP2LearningMode
+                    useP2LearningMode: useP2LearningMode,
+                    useMutualLearning: useMutualLearning
                 },
                 p2ResponseBlacklist: useP2LearningMode ? p2ResponseBlacklist : null,
+                mutualBlacklist: useMutualLearning ? mutualBlacklist : null,
                 exhaustiveOpeningStats: useExhaustiveOpening ? exhaustiveOpeningStats : null
             };
             document.getElementById('downloadResultsBtn').style.display = 'inline-block';
@@ -1880,12 +2287,17 @@
             let game;
             if (useAsymmetricTiles) {
                 game = new HexukiGameEngineAsymmetric();
+                // Apply custom tiles if specified
+                applyCustomTiles(game);
             } else if (useFreeOpening) {
                 game = new HexukiGameEngineFreeOpening();
             } else {
                 game = new HexukiGameEngineV2();
             }
-            const aiPlayer = new MCTSPlayer(mctsSims);
+            const aiPlayer = new MCTSPlayer(mctsSims, null, {
+                useMinimaxRollouts: useMinimaxRollouts,
+                minimaxThreshold: minimaxThreshold
+            });
             const minimax = useMinimaxEndgame ? new MinimaxEndgameSolverOptimized(game) : null;
 
             const moves = [];
@@ -1903,9 +2315,140 @@
             let p1Move1Key = null; // Track P1's opening for blacklist lookup
             let p2Move2 = null; // Track P2's response for potential blacklisting
 
+            // Mutual learning: track first 6 moves (3 per player)
+            const trackedMoves = []; // Stores move keys: [move0, move1, move2, move3, move4, move5]
+
             while (!game.gameEnded) {
                 let validMoves = game.getAllValidMoves();
                 if (validMoves.length === 0) break;
+
+                // MUTUAL LEARNING MODE: Filter out blacklisted sequences (6 moves deep)
+                if (useMutualLearning && moveNum < 6) {
+                    const currentPlayer = game.currentPlayer;
+
+                    if (currentPlayer === 1) {
+                        // P1's turn (moves 0, 2, 4)
+                        // In exhaustive opening mode, skip move 0 blacklisting (we're testing specific openings)
+                        if (moveNum === 0 && useExhaustiveOpening) {
+                            // Don't blacklist P1's opening move in exhaustive mode
+                            console.log('Mutual Learning (P1): Skipping move 1 blacklist check (exhaustive opening mode)');
+                        } else {
+                            // Build P1's sequence INCLUDING opponent moves for context
+                            let p1Sequence = '';
+                            if (moveNum === 0) {
+                                // First move - check if any opening is blacklisted (only in non-exhaustive mode)
+                                p1Sequence = ''; // No sequence yet
+                            } else if (moveNum === 2) {
+                                // Third move - include P1's move 1 AND P2's move 2 for context
+                                p1Sequence = trackedMoves[0] + '-' + trackedMoves[1]; // P1 opening + P2 response
+                            } else if (moveNum === 4) {
+                                // Fifth move - full sequence so far: P1-P2-P1-P2
+                                p1Sequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2] + '-' + trackedMoves[3];
+                            }
+
+                            // Filter moves that would lead to a blacklisted sequence
+                            if (p1Sequence || moveNum === 0) {
+                                const beforeCount = validMoves.length;
+                                validMoves = validMoves.filter(move => {
+                                    const moveKey = `h${move.hexId}t${move.tileValue}`;
+                                    const partialSequence = p1Sequence ? (p1Sequence + '-' + moveKey) : moveKey;
+
+                                    // Check if any blacklisted sequence starts with this partial sequence
+                                    const isBlacklisted = Object.keys(mutualBlacklist.p1).some(blacklisted =>
+                                        blacklisted.startsWith(partialSequence)
+                                    );
+
+                                    return !isBlacklisted;
+                                });
+                                const afterCount = validMoves.length;
+                                if (beforeCount > afterCount) {
+                                    console.log(`Mutual Learning (P1): Filtered ${beforeCount - afterCount} blacklisted moves. ${afterCount} options remain.`);
+                                }
+                            }
+                        }
+                    } else {
+                        // P2's turn (moves 1, 3, 5)
+                        // Build P2's sequence INCLUDING opponent moves for context
+                        const p1Opening = trackedMoves[0] || ''; // P1's first move
+                        let p2Sequence = '';
+
+                        if (moveNum === 1) {
+                            // Second move - context is just P1's opening
+                            p2Sequence = trackedMoves[0]; // P1's opening
+                            console.log(`DEBUG P2 Move 2: p2Sequence='${p2Sequence}', trackedMoves[0]='${trackedMoves[0]}', will filter=${!!p2Sequence}`);
+                        } else if (moveNum === 3) {
+                            // Fourth move - include P1's opening + P2's move 2 + P1's move 3
+                            p2Sequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2];
+                        } else if (moveNum === 5) {
+                            // Sixth move - full sequence: P1-P2-P1-P2-P1
+                            p2Sequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2] + '-' + trackedMoves[3] + '-' + trackedMoves[4];
+                        }
+
+                        // Filter moves that would lead to a blacklisted sequence
+                        if (p2Sequence) {
+                            const beforeCount = validMoves.length;
+                            validMoves = validMoves.filter(move => {
+                                const moveKey = `h${move.hexId}t${move.tileValue}`;
+                                const partialSequence = p2Sequence + '-' + moveKey;
+
+                                // Check if any blacklisted sequence starts with this partial sequence
+                                const isBlacklisted = Object.keys(mutualBlacklist.p2).some(blacklisted =>
+                                    blacklisted.startsWith(partialSequence)
+                                );
+
+                                return !isBlacklisted;
+                            });
+                            const afterCount = validMoves.length;
+                            if (beforeCount > afterCount) {
+                                // Log which moves were filtered
+                                const allMoves = game.getAllValidMoves().map(m => `h${m.hexId}t${m.tileValue}`);
+                                const remainingMoves = validMoves.map(m => `h${m.hexId}t${m.tileValue}`);
+                                const filteredMoves = allMoves.filter(m => !remainingMoves.includes(m));
+                                console.log(`Mutual Learning (P2): Filtered ${filteredMoves.join(', ')} (${beforeCount - afterCount} moves). ${afterCount} options remain.`);
+                            }
+                        }
+                    }
+
+                    // If all moves are blacklisted, reset that specific sequence
+                    if (validMoves.length === 0) {
+                        const currentPlayer = game.currentPlayer;
+                        if (currentPlayer === 1) {
+                            // Build the current context sequence
+                            let p1Sequence = '';
+                            if (moveNum === 0) {
+                                p1Sequence = '';
+                            } else if (moveNum === 2) {
+                                p1Sequence = trackedMoves[0] + '-' + trackedMoves[1];
+                            } else if (moveNum === 4) {
+                                p1Sequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2] + '-' + trackedMoves[3];
+                            }
+                            console.log(`WARNING: All P1 moves blacklisted! Resetting P1 blacklist for sequence: ${p1Sequence || 'opening'}`);
+                            // Reset relevant blacklist entries
+                            if (p1Sequence) {
+                                Object.keys(mutualBlacklist.p1).forEach(key => {
+                                    if (key.startsWith(p1Sequence)) delete mutualBlacklist.p1[key];
+                                });
+                            } else {
+                                mutualBlacklist.p1 = {};
+                            }
+                        } else {
+                            // Build the current context sequence for P2
+                            let p2Sequence = '';
+                            if (moveNum === 1) {
+                                p2Sequence = trackedMoves[0];
+                            } else if (moveNum === 3) {
+                                p2Sequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2];
+                            } else if (moveNum === 5) {
+                                p2Sequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2] + '-' + trackedMoves[3] + '-' + trackedMoves[4];
+                            }
+                            console.log(`WARNING: All P2 moves blacklisted! Resetting P2 blacklist for sequence: ${p2Sequence}`);
+                            Object.keys(mutualBlacklist.p2).forEach(key => {
+                                if (key.startsWith(p2Sequence)) delete mutualBlacklist.p2[key];
+                            });
+                        }
+                        validMoves = game.getAllValidMoves();
+                    }
+                }
 
                 // P2 LEARNING MODE: Filter out blacklisted responses on move 2
                 if (useP2LearningMode && moveNum === 1) {
@@ -1968,11 +2511,14 @@
                     const simsToUse = useDoubleMCTS ? mctsSims * 2 : mctsSims;
 
                     if (useMinimax) {
-                        result = minimax.getBestMove(game);
+                        result = runMinimax(game, 20, minimax);
                     } else {
                         // Run MCTS (with double sims if enabled)
                         if (useDoubleMCTS) {
-                            const tempAI = new MCTSPlayer(simsToUse);
+                            const tempAI = new MCTSPlayer(simsToUse, null, {
+                                useMinimaxRollouts: useMinimaxRollouts,
+                                minimaxThreshold: minimaxThreshold
+                            });
                             result = await runMCTSChunked(game, simsToUse, tempAI);
                         } else {
                             result = await runMCTSChunked(game, mctsSims, aiPlayer);
@@ -2014,6 +2560,44 @@
                                 console.log(`P2 Learning: MCTS top choice h${result.move.hexId}t${result.move.tileValue} (not blacklisted, visits: ${result.stats.visits})`);
                             }
                         }
+
+                        // Mutual Learning Mode: If MCTS picked a blacklisted move, use next-best alternative
+                        if (useMutualLearning && moveNum < 6 && result) {
+                            const selectedMove = `h${result.move.hexId}t${result.move.tileValue}`;
+                            const isBlacklisted = !validMoves.some(vm => vm.hexId === result.move.hexId && vm.tileValue === result.move.tileValue);
+
+                            if (isBlacklisted) {
+                                const player = game.currentPlayer === 1 ? 'P1' : 'P2';
+                                console.log(`Mutual Learning (${player}): MCTS top choice ${selectedMove} is blacklisted. Searching alternatives...`);
+
+                                // Find best non-blacklisted alternative from MCTS ranking
+                                let foundAlternative = false;
+                                if (result.stats && result.stats.alternatives) {
+                                    for (const alt of result.stats.alternatives) {
+                                        const altMove = `h${alt.move.hexId}t${alt.move.tileValue}`;
+                                        const altBlacklisted = !validMoves.some(vm => vm.hexId === alt.move.hexId && vm.tileValue === alt.move.tileValue);
+
+                                        if (!altBlacklisted) {
+                                            result.move = alt.move;
+                                            console.log(`Mutual Learning (${player}): Using MCTS alternative #${result.stats.alternatives.indexOf(alt) + 2}: ${altMove}`);
+                                            foundAlternative = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // If all alternatives are blacklisted, pick random non-blacklisted move
+                                if (!foundAlternative) {
+                                    console.log(`Mutual Learning (${player}): All MCTS alternatives blacklisted. Random selection from ${validMoves.length} remaining options.`);
+                                    const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                                    result.move = {
+                                        hexId: randomMove.hexId,
+                                        tileValue: randomMove.tileValue
+                                    };
+                                    console.log(`Mutual Learning (${player}): Selected h${randomMove.hexId}t${randomMove.tileValue}`);
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -2022,6 +2606,12 @@
                 // Make move
                 game.makeMove(result.move.hexId, result.move.tileValue);
                 moves.push({ hex: result.move.hexId, tile: result.move.tileValue });
+
+                // Track moves for mutual learning (first 6 moves)
+                if (useMutualLearning && moveNum < 6) {
+                    const moveKey = `h${result.move.hexId}t${result.move.tileValue}`;
+                    trackedMoves[moveNum] = moveKey;
+                }
 
                 // Track P2's move 2 for potential blacklisting
                 if (moveNum === 1) {
@@ -2075,6 +2665,29 @@
                     if (!p2ResponseBlacklist[p1Move1Key].includes(p2Move2)) {
                         p2ResponseBlacklist[p1Move1Key].push(p2Move2);
                         console.log(`P2 Learning: Blacklisted ${p2Move2} for ${p1Move1Key} (P2 lost ${scores.player2} vs ${scores.player1})`);
+                    }
+                }
+            }
+
+            // MUTUAL LEARNING MODE: Add to blacklist if either player lost
+            if (useMutualLearning && trackedMoves.length >= 6) {
+                // We have a complete 6-move sequence with full context
+                // P1 sequences: P1move-P2move-P1move-P2move-P1move
+                // P2 sequences: P1move-P2move-P1move-P2move-P1move-P2move
+                const p1FullSequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2] + '-' + trackedMoves[3] + '-' + trackedMoves[4];
+                const p2FullSequence = trackedMoves[0] + '-' + trackedMoves[1] + '-' + trackedMoves[2] + '-' + trackedMoves[3] + '-' + trackedMoves[4] + '-' + trackedMoves[5];
+
+                if (scores.player1 < scores.player2) {
+                    // P1 lost - blacklist P1's full sequence including opponent context
+                    if (!mutualBlacklist.p1[p1FullSequence]) {
+                        mutualBlacklist.p1[p1FullSequence] = true;
+                        console.log(`Mutual Learning: Blacklisted P1 sequence ${p1FullSequence} (P1 lost ${scores.player1} vs ${scores.player2})`);
+                    }
+                } else if (scores.player2 < scores.player1) {
+                    // P2 lost - blacklist P2's full sequence including opponent context
+                    if (!mutualBlacklist.p2[p2FullSequence]) {
+                        mutualBlacklist.p2[p2FullSequence] = true;
+                        console.log(`Mutual Learning: Blacklisted P2 sequence ${p2FullSequence} (P2 lost ${scores.player2} vs ${scores.player1})`);
                     }
                 }
             }
@@ -2843,11 +3456,37 @@
             csv += `Minimax Threshold,${lastSimulationStats.config.minimaxThreshold} empty hexes\n`;
             csv += `Strong Openings Only,${lastSimulationStats.config.useStrongOpeningsOnly}\n`;
             csv += `Random Good Openings,${lastSimulationStats.config.useRandomGoodOpenings || false}\n`;
+            csv += `Top 10 Openings,${lastSimulationStats.config.useTop10Openings || false}\n`;
             csv += `Double MCTS for P2 Move 2,${lastSimulationStats.config.doubleMCTSForP2Move2}\n`;
             csv += `P2 Learning Mode,${lastSimulationStats.config.useP2LearningMode}\n`;
+            csv += `Mutual Learning Mode,${lastSimulationStats.config.useMutualLearning}\n`;
             csv += `\n`;
 
-            // Add blacklist info if learning mode was used
+            // Add mutual blacklist info if mutual learning was used
+            if (lastSimulationStats.config.useMutualLearning && lastSimulationStats.mutualBlacklist) {
+                csv += 'MUTUAL LEARNING BLACKLISTS (Context-aware sequences that lost)\n';
+                csv += '\n';
+
+                // P1 Blacklist
+                const p1Blacklisted = Object.keys(lastSimulationStats.mutualBlacklist.p1);
+                csv += `P1 BLACKLISTED SEQUENCES (Total: ${p1Blacklisted.length})\n`;
+                csv += 'Full Sequence (P1-P2-P1-P2-P1)\n';
+                p1Blacklisted.forEach(seq => {
+                    csv += `"${seq}"\n`;
+                });
+                csv += '\n';
+
+                // P2 Blacklist
+                const p2Blacklisted = Object.keys(lastSimulationStats.mutualBlacklist.p2);
+                csv += `P2 BLACKLISTED SEQUENCES (Total: ${p2Blacklisted.length})\n`;
+                csv += 'Full Sequence (P1-P2-P1-P2-P1-P2)\n';
+                p2Blacklisted.forEach(seq => {
+                    csv += `"${seq}"\n`;
+                });
+                csv += '\n';
+            }
+
+            // Add blacklist info if P2 learning mode was used
             if (lastSimulationStats.config.useP2LearningMode && lastSimulationStats.p2ResponseBlacklist) {
                 if (lastSimulationStats.config.useRandomGoodOpenings && lastSimulationStats.p2ResponseBlacklist.global) {
                     // Global blacklist for random good openings mode
