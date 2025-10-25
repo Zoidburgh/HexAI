@@ -39,6 +39,7 @@ MCTSResult MCTS::findBestMove(HexukiBitboard& board, const MCTSConfig& config) {
     // Initialize root node
     resetTree();
     root = new MCTSNode();
+    root->playerToMove = rootPlayer;  // Root player makes the first move
     root->untriedMoves = board.getValidMoves();
 
     MCTSResult result;
@@ -114,18 +115,21 @@ MCTSResult MCTS::findBestMove(HexukiBitboard& board, const MCTSConfig& config) {
     if (bestChild != nullptr) {
         result.bestMove = bestChild->move;
         result.visits = bestChild->visits;
-        result.winRate = bestChild->getAverageScore();
+        // Invert child's score to get win rate from root player's perspective
+        // Children store from opponent's perspective, we want from our perspective
+        result.winRate = 1.0 - bestChild->getAverageScore();
 
         // Collect top moves for analysis
         std::vector<MCTSNode*> sortedChildren = root->children;
         std::sort(sortedChildren.begin(), sortedChildren.end(),
                   [](MCTSNode* a, MCTSNode* b) { return a->visits > b->visits; });
 
-        for (size_t i = 0; i < std::min(size_t(5), sortedChildren.size()); i++) {
+        for (size_t i = 0; i < std::min(size_t(10), sortedChildren.size()); i++) {
             MCTSResult::MoveStats stats;
             stats.move = sortedChildren[i]->move;
             stats.visits = sortedChildren[i]->visits;
-            stats.winRate = sortedChildren[i]->getAverageScore();
+            // Invert to show from root player's perspective (the player making the move)
+            stats.winRate = 1.0 - sortedChildren[i]->getAverageScore();
             result.topMoves.push_back(stats);
         }
     }
@@ -192,6 +196,7 @@ MCTSNode* MCTS::expand(MCTSNode* node, HexukiBitboard& board) {
 
     // Create child node
     MCTSNode* child = node->addChild(move);
+    child->playerToMove = board.getCurrentPlayer();  // After move, it's opponent's turn
 
     // Initialize child's untried moves
     if (!isTerminal(board)) {
@@ -225,10 +230,17 @@ double MCTS::simulate(HexukiBitboard& board) {
 /**
  * BACKPROPAGATION PHASE
  * Update all ancestor nodes with simulation result
+ *
+ * Score is ALWAYS from Player 1's perspective (1.0 = P1 wins, 0.0 = P2 wins)
+ * Each node stores wins from ITS playerToMove's perspective
  */
 void MCTS::backpropagate(MCTSNode* node, double score) {
     while (node != nullptr) {
-        node->update(score);
+        // Store score from this node's player perspective
+        // If this is P1's node (P1 to move), use score as-is
+        // If this is P2's node (P2 to move), invert (P2 wants opposite of P1)
+        double nodeScore = (node->playerToMove == PLAYER_1) ? score : (1.0 - score);
+        node->update(nodeScore);
         node = node->parent;
     }
 }
@@ -246,21 +258,12 @@ bool MCTS::isTerminal(const HexukiBitboard& board) const {
 }
 
 double MCTS::evaluateTerminal(const HexukiBitboard& board) const {
-    // Return score difference from root player's perspective
-    // Normalize to roughly [-1, 1] range for better UCT behavior
+    // ALWAYS return from Player 1's perspective (1.0 = P1 wins, 0.0 = P2 wins)
+    // This matches the JavaScript implementation
     int p1Score = board.getScore(PLAYER_1);
     int p2Score = board.getScore(PLAYER_2);
 
-    double scoreDiff;
-    if (rootPlayer == PLAYER_1) {
-        scoreDiff = p1Score - p2Score;  // P1 wants high score
-    } else {
-        scoreDiff = p2Score - p1Score;  // P2 wants high score
-    }
-
-    // Normalize: divide by typical max score (~500-1000)
-    // This keeps values in reasonable range for UCT
-    return scoreDiff / 500.0;
+    return (p1Score > p2Score) ? 1.0 : 0.0;
 }
 
 Move MCTS::selectRandomMove(const std::vector<Move>& moves) {

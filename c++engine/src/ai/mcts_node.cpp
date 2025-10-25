@@ -9,6 +9,7 @@ namespace mcts {
 MCTSNode::MCTSNode(MCTSNode* parent, const Move& move)
     : parent(parent)
     , move(move)
+    , playerToMove(0)  // Will be set by MCTS::expand()
     , visits(0)
     , totalScore(0.0) {
 }
@@ -34,9 +35,10 @@ double MCTSNode::getUCTValue(double explorationConstant) const {
     }
 
     // UCT formula: exploitation + exploration
-    // exploitation = average score (wins / visits)
-    // exploration = C * sqrt(ln(parent_visits) / visits)
-    double exploitation = getAverageScore();
+    // Child nodes store wins from THEIR perspective (opponent's turn)
+    // We want children with LOW scores (bad for opponent = good for us)
+    // So invert: 1.0 - childScore to prefer children where opponent loses
+    double exploitation = 1.0 - getAverageScore();
     double exploration = explorationConstant * std::sqrt(std::log(parent->visits) / visits);
 
     return exploitation + exploration;

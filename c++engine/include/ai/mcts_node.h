@@ -26,10 +26,11 @@ public:
     MCTSNode* parent;
     std::vector<MCTSNode*> children;
     Move move;  // The move that led to this node (empty for root)
+    int playerToMove;     // Which player moves at this node (1 or 2)
 
     // MCTS statistics
     int visits;           // Number of times this node was visited
-    double totalScore;    // Sum of scores from simulations (from P1's perspective)
+    double totalScore;    // Sum of scores from simulations
 
     // Unexpanded moves (moves we haven't created child nodes for yet)
     std::vector<Move> untriedMoves;

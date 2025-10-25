@@ -318,6 +318,42 @@
             stroke-width: 3;
         }
 
+        /* Last Move Display */
+        .last-move-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            min-height: 45px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .last-move-display .move-text {
+            font-size: 1.1em;
+            margin-bottom: 3px;
+        }
+
+        .last-move-display .confidence-text {
+            font-size: 0.85em;
+            opacity: 0.9;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .last-move-display.player1 {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .last-move-display.player2 {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
         .hex.valid-move:hover polygon {
             fill: #a9dfbf;
             stroke: #229954;
@@ -579,6 +615,10 @@
 
             <!-- Board -->
             <div class="game-board-container">
+                <div class="last-move-display" id="lastMoveDisplay" style="display: none;">
+                    <div class="move-text" id="lastMoveText"></div>
+                    <div class="confidence-text" id="lastMoveConfidence"></div>
+                </div>
                 <div class="board-container">
                     <svg id="board" viewBox="0 0 450 500"></svg>
                 </div>
@@ -1187,6 +1227,9 @@
             // Create board
             createHexBoard();
 
+            // Hide last move display at start
+            document.getElementById('lastMoveDisplay').style.display = 'none';
+
             // Show opening info with AI settings
             let ruleVariant = '';
             if (useFreeOpening) ruleVariant += '[FREE OPENING] ';
@@ -1241,6 +1284,9 @@
                 hex: currentP2Counter.p2Move.hexId,
                 tile: currentP2Counter.p2Move.tileValue
             });
+
+            // Show P2's counter as the last move
+            updateLastMoveDisplay(2, currentP2Counter.p2Move.hexId, currentP2Counter.p2Move.tileValue, null);
         }
 
         async function makeNextMove() {
@@ -1271,14 +1317,31 @@
                 result = await runMCTSChunked(currentGame, mctsSims);
             }
 
+            const movingPlayer = currentGame.currentPlayer;
             currentGame.makeMove(result.move.hexId, result.move.tileValue);
 
             moveHistory.push({
                 moveNum: moveHistory.length + 1,
-                player: currentGame.currentPlayer === 1 ? 2 : 1, // Previous player
+                player: movingPlayer, // Player who just moved
                 hex: result.move.hexId,
                 tile: result.move.tileValue
             });
+
+            // Update last move display with confidence if available
+            const confidence = (result.winRate !== undefined && result.visits !== undefined)
+                ? { winRate: result.winRate, visits: result.visits }
+                : null;
+
+            // DEBUG: Log full MCTS result
+            console.log('MCTS Result:', {
+                move: result.move,
+                visits: result.visits,
+                winRate: result.winRate,
+                simulations: result.simulations,
+                simsRequested: mctsSims
+            });
+
+            updateLastMoveDisplay(movingPlayer, result.move.hexId, result.move.tileValue, confidence);
 
             updateDisplay();
 
@@ -1321,7 +1384,8 @@
 
             document.getElementById('gameEndedMsg').innerHTML = `<div class="game-ended">${msg}</div>`;
             document.getElementById('nextMoveBtn').disabled = true;
-            document.getElementById('undoBtn').disabled = true;
+            // Keep undo enabled so you can step back from game end
+            // document.getElementById('undoBtn').disabled = true;
             document.getElementById('autoPlayBtn').disabled = true;
             document.getElementById('gameInfo').textContent = 'Game finished';
         }
@@ -1339,6 +1403,30 @@
                 document.getElementById('selectionSection').style.display = 'none';
             }
             document.getElementById('gameContainer').style.display = 'none';
+        }
+
+        function updateLastMoveDisplay(player, hexId, tileValue, confidence = null) {
+            const display = document.getElementById('lastMoveDisplay');
+            const moveText = document.getElementById('lastMoveText');
+            const confidenceText = document.getElementById('lastMoveConfidence');
+
+            // Update move text with hex ID format
+            moveText.textContent = `P${player} played H(${hexId})+${tileValue}`;
+
+            // Update confidence text if provided (MCTS move)
+            if (confidence !== null) {
+                const winRate = (confidence.winRate * 100).toFixed(1);
+                const visits = confidence.visits.toLocaleString();
+                confidenceText.textContent = `MCTS: ${winRate}% confidence (${visits} visits)`;
+                confidenceText.style.display = 'block';
+            } else {
+                confidenceText.style.display = 'none';
+            }
+
+            // Update player-specific styling
+            display.className = 'last-move-display';
+            display.classList.add(`player${player}`);
+            display.style.display = 'flex';
         }
 
         function updateDisplay() {
@@ -1607,6 +1695,15 @@
             updateDisplay();
             document.getElementById('gameEndedMsg').innerHTML = '';
 
+            // Update last move display to show the new last move (or hide if none)
+            if (moveHistory.length > 0) {
+                const lastMove = moveHistory[moveHistory.length - 1];
+                updateLastMoveDisplay(lastMove.player, lastMove.hex, lastMove.tile, null);
+            } else {
+                // No moves left, hide the display
+                document.getElementById('lastMoveDisplay').style.display = 'none';
+            }
+
             // Update buttons
             document.getElementById('nextMoveBtn').disabled = false;
             document.getElementById('autoPlayBtn').disabled = false;
@@ -1659,6 +1756,9 @@
                 hex: hexId,
                 tile: selectedTile
             });
+
+            // Update last move display (no confidence for human moves)
+            updateLastMoveDisplay(player, hexId, selectedTile, null);
 
             // Clear selection
             selectedTile = null;
@@ -1770,6 +1870,15 @@
                 // Run C++ MCTS with exact simulation count requested
                 const resultJson = wasmModule.mctsFindBestMove(totalSims, 0, false);
                 const result = JSON.parse(resultJson);
+
+                // DEBUG: Log top 10 moves to see visit distribution
+                if (result.topMoves && result.topMoves.length > 0) {
+                    console.log('=== MCTS Top 10 Moves ===');
+                    result.topMoves.slice(0, 10).forEach((m, i) => {
+                        console.log(`  #${i+1}: H(${m.hexId})+${m.tileValue} | ${m.visits.toLocaleString()} visits | ${(m.winRate * 100).toFixed(1)}% win rate`);
+                    });
+                    console.log('========================');
+                }
 
                 // Return in format expected by caller: { move: { hexId, tileValue } }
                 return {
