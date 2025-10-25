@@ -4,6 +4,7 @@
 #include "core/bitboard.h"
 #include "core/move.h"
 #include "ai/mcts_node.h"
+#include "ai/minimax.h"
 #include <random>
 #include <chrono>
 
@@ -19,6 +20,10 @@ struct MCTSConfig {
     double explorationConstant = 1.414;  // UCT exploration constant (√2 is standard)
     bool useTimeLimit = true;       // Use time limit vs simulation count
     bool verbose = false;           // Print search progress
+
+    // Minimax rollout configuration
+    bool useMinimaxRollouts = false;  // Use minimax for endgame evaluation
+    int minimaxThreshold = 7;         // Switch to minimax at this many empty hexes
 
     MCTSConfig() = default;
 };
@@ -82,11 +87,16 @@ private:
     MCTSNode* root;
     std::mt19937 rng;  // Random number generator for simulations
     int rootPlayer;    // Player to move at root (1 or 2)
+    const MCTSConfig* currentConfig;  // Current search configuration
+
+    // Shared minimax transposition table for rollout evaluation
+    // Reused across all simulations for speed (cache hit rate improves over time)
+    minimax::TranspositionTable* sharedMinimaxTT;
 
     // MCTS phases
     MCTSNode* select(MCTSNode* node, HexukiBitboard& board);
     MCTSNode* expand(MCTSNode* node, HexukiBitboard& board);
-    double simulate(HexukiBitboard& board);
+    double simulate(HexukiBitboard& board, const MCTSConfig& config);
     void backpropagate(MCTSNode* node, double score);
 
     // Helper: get all valid moves at current state

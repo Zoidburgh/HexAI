@@ -148,7 +148,7 @@ extern "C" const char* wasmGetValidMoves() {
 
 // Returns best move as JSON: {hexId:6, tileValue:5, visits:1234, winRate:0.6, simulations:10000, timeMs:500}
 EMSCRIPTEN_KEEPALIVE
-extern "C" const char* wasmMCTSFindBestMove(int simulations, int timeLimitMs, bool useTimeLimit) {
+extern "C" const char* wasmMCTSFindBestMove(int simulations, int timeLimitMs, bool useTimeLimit, bool useMinimaxRollouts, int minimaxThreshold) {
     static std::string result;
 
     if (!g_board || !g_mcts) {
@@ -161,18 +161,32 @@ extern "C" const char* wasmMCTSFindBestMove(int simulations, int timeLimitMs, bo
     config.timeLimitMs = timeLimitMs;
     config.useTimeLimit = useTimeLimit;
     config.verbose = false;
+    config.useMinimaxRollouts = useMinimaxRollouts;
+    config.minimaxThreshold = minimaxThreshold;
 
     auto searchResult = g_mcts->findBestMove(*g_board, config);
 
-    // Build JSON response
+    // Build JSON response with topMoves
     result = "{";
     result += "\"hexId\":" + std::to_string(searchResult.bestMove.hexId) + ",";
     result += "\"tileValue\":" + std::to_string(searchResult.bestMove.tileValue) + ",";
     result += "\"visits\":" + std::to_string(searchResult.visits) + ",";
     result += "\"winRate\":" + std::to_string(searchResult.winRate) + ",";
     result += "\"simulations\":" + std::to_string(searchResult.simulations) + ",";
-    result += "\"timeMs\":" + std::to_string(searchResult.timeMs);
-    result += "}";
+    result += "\"timeMs\":" + std::to_string(searchResult.timeMs) + ",";
+
+    // Add topMoves array
+    result += "\"topMoves\":[";
+    for (size_t i = 0; i < searchResult.topMoves.size(); i++) {
+        result += "{";
+        result += "\"hexId\":" + std::to_string(searchResult.topMoves[i].move.hexId) + ",";
+        result += "\"tileValue\":" + std::to_string(searchResult.topMoves[i].move.tileValue) + ",";
+        result += "\"visits\":" + std::to_string(searchResult.topMoves[i].visits) + ",";
+        result += "\"winRate\":" + std::to_string(searchResult.topMoves[i].winRate);
+        result += "}";
+        if (i < searchResult.topMoves.size() - 1) result += ",";
+    }
+    result += "]}";
 
     return result.c_str();
 }
@@ -235,8 +249,8 @@ std::string wasmGetValidMovesStr() {
     return std::string(wasmGetValidMoves());
 }
 
-std::string wasmMCTSFindBestMoveStr(int simulations, int timeLimitMs, bool useTimeLimit) {
-    return std::string(wasmMCTSFindBestMove(simulations, timeLimitMs, useTimeLimit));
+std::string wasmMCTSFindBestMoveStr(int simulations, int timeLimitMs, bool useTimeLimit, bool useMinimaxRollouts, int minimaxThreshold) {
+    return std::string(wasmMCTSFindBestMove(simulations, timeLimitMs, useTimeLimit, useMinimaxRollouts, minimaxThreshold));
 }
 
 std::string wasmMinimaxFindBestMoveStr(int depth, int timeLimitMs) {

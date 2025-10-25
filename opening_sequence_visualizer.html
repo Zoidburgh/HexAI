@@ -508,6 +508,17 @@
         </div>
         <div class="select-row">
             <label>
+                <input type="checkbox" id="useMCTSMinimaxRolloutsCheckbox">
+                Enable MCTS Minimax Rollouts (hybrid MCTS - better opening moves)
+            </label>
+        </div>
+        <div class="select-row" id="mctsMinimaxThresholdRow" style="display: none;">
+            <label>MCTS switches to minimax at <span id="mctsMinimaxThresholdValue">7</span> empty hexes:</label>
+            <input type="range" id="mctsMinimaxThreshold" min="4" max="12" value="7"
+                   style="width: 100%; margin-top: 5px;">
+        </div>
+        <div class="select-row">
+            <label>
                 <input type="checkbox" id="useMinimaxCheckbox" checked>
                 Enable Minimax Endgame (perfect play)
             </label>
@@ -805,6 +816,8 @@
         let minimaxThreshold = 6;
         let useMinimaxEndgame = true;
         let useMinimaxRollouts = false; // Hybrid MCTS with minimax-terminated rollouts
+        let useMCTSMinimaxRollouts = false; // Use minimax for MCTS rollout evaluation
+        let mctsMinimaxThreshold = 7; // Switch to minimax at this many empty hexes
         let mctsEngine = 'cpp'; // 'javascript' or 'cpp'
         let minimaxEngine = 'cpp'; // 'javascript' or 'cpp'
         let wasmModule = null; // C++ WASM module
@@ -1034,6 +1047,17 @@
                 e.target.value = 'javascript';
                 minimaxEngine = 'javascript';
             }
+        });
+
+        document.getElementById('useMCTSMinimaxRolloutsCheckbox').addEventListener('change', (e) => {
+            useMCTSMinimaxRollouts = e.target.checked;
+            document.getElementById('mctsMinimaxThresholdRow').style.display =
+                useMCTSMinimaxRollouts ? 'block' : 'none';
+        });
+
+        document.getElementById('mctsMinimaxThreshold').addEventListener('input', (e) => {
+            mctsMinimaxThreshold = parseInt(e.target.value);
+            document.getElementById('mctsMinimaxThresholdValue').textContent = mctsMinimaxThreshold;
         });
 
         document.getElementById('useMinimaxCheckbox').addEventListener('change', (e) => {
@@ -1868,7 +1892,8 @@
                 wasmModule.loadPosition(position);
 
                 // Run C++ MCTS with exact simulation count requested
-                const resultJson = wasmModule.mctsFindBestMove(totalSims, 0, false);
+                // Parameters: (simulations, timeLimitMs, useTimeLimit, useMinimaxRollouts, minimaxThreshold)
+                const resultJson = wasmModule.mctsFindBestMove(totalSims, 0, false, useMCTSMinimaxRollouts, mctsMinimaxThreshold);
                 const result = JSON.parse(resultJson);
 
                 // DEBUG: Log top 10 moves to see visit distribution

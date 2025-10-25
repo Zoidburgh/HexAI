@@ -1,4 +1,5 @@
 #include "ai/mcts.h"
+#include "ai/minimax.h"
 #include <iostream>
 #include <algorithm>
 #include <cmath>
@@ -12,11 +13,19 @@ namespace mcts {
 
 MCTS::MCTS()
     : root(nullptr)
-    , rng(std::random_device{}()) {
+    , rng(std::random_device{}())
+    , currentConfig(nullptr)
+    , sharedMinimaxTT(nullptr) {
+    // Create shared transposition table for minimax rollouts (128MB)
+    sharedMinimaxTT = new minimax::TranspositionTable(128);
 }
 
 MCTS::~MCTS() {
     resetTree();
+    if (sharedMinimaxTT) {
+        delete sharedMinimaxTT;
+        sharedMinimaxTT = nullptr;
+    }
 }
 
 void MCTS::resetTree() {
@@ -41,6 +50,12 @@ MCTSResult MCTS::findBestMove(HexukiBitboard& board, const MCTSConfig& config) {
     root = new MCTSNode();
     root->playerToMove = rootPlayer;  // Root player makes the first move
     root->untriedMoves = board.getValidMoves();
+
+    // Clear shared transposition table for fresh search
+    // (cache will build up during simulations and speed up later ones)
+    if (sharedMinimaxTT) {
+        sharedMinimaxTT->clear();
+    }
 
     MCTSResult result;
     result.simulations = 0;
@@ -72,8 +87,8 @@ MCTSResult MCTS::findBestMove(HexukiBitboard& board, const MCTSConfig& config) {
             node = expand(node, simBoard);
         }
 
-        // 3. SIMULATION: Play random game to end
-        double score = simulate(simBoard);
+        // 3. SIMULATION: Play random game to end (or use minimax for endgame)
+        double score = simulate(simBoard, config);
 
         // 4. BACKPROPAGATION: Update all ancestors
         backpropagate(node, score);
@@ -208,22 +223,72 @@ MCTSNode* MCTS::expand(MCTSNode* node, HexukiBitboard& board) {
 
 /**
  * SIMULATION PHASE (ROLLOUT)
- * Play random moves until game ends
+ * Play random moves until game ends, or use minimax for endgame
  * Returns score from Player 1's perspective
  */
-double MCTS::simulate(HexukiBitboard& board) {
-    // Play random moves until game over
+double MCTS::simulate(HexukiBitboard& board, const MCTSConfig& config) {
+    // Phase 1: Random rollout until threshold (if minimax enabled)
     while (!isTerminal(board)) {
-        std::vector<Move> moves = board.getValidMoves();
+        // Check if we should switch to minimax evaluation
+        if (config.useMinimaxRollouts) {
+            int emptyHexes = 0;
+            for (int i = 0; i < NUM_HEXES; i++) {
+                if (!board.isHexOccupied(i)) {
+                    emptyHexes++;
+                }
+            }
 
+            // Switch to minimax when at or below threshold
+            if (emptyHexes <= config.minimaxThreshold) {
+                // Use minimax with SHARED transposition table for speed
+                // Cache builds up across simulations → later sims are much faster
+                int searchDepth = emptyHexes;
+                int currentPlayer = board.getCurrentPlayer();
+                int nodesSearched = 0;
+
+                // Call minimax alpha-beta with shared TT
+                int score = minimax::alphaBeta(
+                    board,
+                    searchDepth,
+                    -1000000,  // alpha
+                    1000000,   // beta
+                    *sharedMinimaxTT,  // SHARED TT across all simulations!
+                    nodesSearched,
+                    std::chrono::steady_clock::now(),
+                    30000  // timeout
+                );
+
+                // Minimax score is from CURRENT PLAYER's perspective
+                // Positive = current player wins, Negative = current player loses
+                // Zero = draw/timeout/uncertain
+
+                // Convert to P1 perspective (matching JavaScript logic)
+                // score > 0: current player wins
+                // score < 0: current player loses
+                // score == 0: uncertain/draw → return 0.5
+
+                if (score > 0) {
+                    // Current player wins
+                    return (currentPlayer == PLAYER_1) ? 1.0 : 0.0;
+                } else if (score < 0) {
+                    // Current player loses
+                    return (currentPlayer == PLAYER_1) ? 0.0 : 1.0;
+                } else {
+                    // Draw/timeout/uncertain → 0.5
+                    return 0.5;
+                }
+            }
+        }
+
+        // Continue random rollout
+        std::vector<Move> moves = board.getValidMoves();
         if (moves.empty()) break;
 
-        // Select random move
         Move move = selectRandomMove(moves);
         board.makeMove(move);
     }
 
-    // Return final score from P1's perspective
+    // Game ended during random rollout - return final score from P1's perspective
     return evaluateTerminal(board);
 }
 
