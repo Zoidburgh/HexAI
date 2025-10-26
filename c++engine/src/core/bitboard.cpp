@@ -34,9 +34,10 @@ void HexukiBitboard::reset() {
     hexOccupied = 0;
     std::memset(hexValues, 0, sizeof(hexValues));
 
-    // Reset available tiles (all tiles 1-NUM_TILE_VALUES available)
-    p1AvailableTiles = ALL_TILES_MASK;
-    p2AvailableTiles = ALL_TILES_MASK;
+    // Reset available tiles (all tiles 1-9 available)
+    // Array-based: supports standard [1,2,3,4,5,6,7,8,9] and asymmetric sets
+    p1AvailableTiles = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    p2AvailableTiles = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     // Initial state: center hex (9) has tile value 1
     hexOccupied = (1u << CENTER_HEX);
@@ -71,22 +72,14 @@ bool HexukiBitboard::isGameOver() const {
 
 bool HexukiBitboard::isTileAvailable(int player, int tileValue) const {
     if (tileValue < 1 || tileValue > MAX_TILE_VALUE) return false;
-    uint16_t tiles = (player == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
-    return (tiles & (1u << tileValue)) != 0;
+    const std::vector<int>& tiles = (player == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
+    // Use std::find to check if tile value exists in array (supports duplicates)
+    return std::find(tiles.begin(), tiles.end(), tileValue) != tiles.end();
 }
 
 std::vector<int> HexukiBitboard::getAvailableTiles(int player) const {
-    std::vector<int> tiles;
-    uint16_t available = (player == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
-
-    // Check each tile value from TILE_VALUES array
-    for (int i = 0; i < NUM_TILES_PER_PLAYER; i++) {
-        int tileVal = TILE_VALUES[i];
-        if (available & (1u << tileVal)) {
-            tiles.push_back(tileVal);
-        }
-    }
-    return tiles;
+    // Simply return the tile array (already supports duplicates)
+    return (player == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
 }
 
 // ============================================================================
@@ -308,6 +301,12 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
     std::vector<Move> moves;
     auto availableTiles = getAvailableTiles(currentPlayer);
 
+    // Get unique tile values (handle duplicates like [1,1,1,1,1,1,1,1,1])
+    // If tiles = [1,1,1], we only want to try placing "1" once, not three times
+    std::vector<int> uniqueTileValues = availableTiles;
+    std::sort(uniqueTileValues.begin(), uniqueTileValues.end());
+    uniqueTileValues.erase(std::unique(uniqueTileValues.begin(), uniqueTileValues.end()), uniqueTileValues.end());
+
     // Early optimization: if symmetry already broken, skip symmetry checks
     bool needSymmetryCheck = symmetryStillPossible && moveCount >= 1;
 
@@ -315,8 +314,8 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
         if (isHexOccupied(hexId)) continue;
 
         if (isMoveLegal(hexId)) {
-            // Try each available tile
-            for (int tileValue : availableTiles) {
+            // Try each unique tile value (avoids generating duplicate moves)
+            for (int tileValue : uniqueTileValues) {
                 // Check if this move would create symmetry
                 if (needSymmetryCheck) {
                     HexukiBitboard testBoard = *this;
@@ -342,24 +341,26 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
 // ============================================================================
 
 void HexukiBitboard::makeMove(const Move& move) {
-    // Save state for unmake
+    // Save state for unmake (full tile array snapshots)
     MoveRecord record;
     record.move = move;
     record.previousP1Tiles = p1AvailableTiles;
     record.previousP2Tiles = p2AvailableTiles;
     record.previousSymmetryPossible = symmetryStillPossible;
-    history.push_back(record);
 
     // Place tile
     hexOccupied |= (1u << move.hexId);
     hexValues[move.hexId] = move.tileValue;
 
-    // Remove tile from available tiles
-    if (currentPlayer == PLAYER_1) {
-        p1AvailableTiles &= ~(1u << move.tileValue);
-    } else {
-        p2AvailableTiles &= ~(1u << move.tileValue);
+    // Remove tile from available tiles (supports duplicates)
+    std::vector<int>& tiles = (currentPlayer == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
+    auto it = std::find(tiles.begin(), tiles.end(), move.tileValue);
+    if (it != tiles.end()) {
+        record.removedTileIndex = std::distance(tiles.begin(), it);
+        tiles.erase(it);  // Remove first occurrence of tile value
     }
+
+    history.push_back(record);
 
     // Update symmetry tracking
     if (symmetryStillPossible) {
@@ -535,18 +536,11 @@ void HexukiBitboard::removeHexValue(int hexId) {
 }
 
 void HexukiBitboard::setAvailableTiles(int player, const std::vector<int>& tiles) {
-    // Convert tile list to bitset
-    uint16_t mask = 0;
-    for (int tileVal : tiles) {
-        if (tileVal >= 1 && tileVal <= MAX_TILE_VALUE) {
-            mask |= (1u << tileVal);
-        }
-    }
-
+    // Directly assign tile vector (supports duplicates like [1,1,1,1,1,1,1,1,1])
     if (player == PLAYER_1) {
-        p1AvailableTiles = mask;
+        p1AvailableTiles = tiles;
     } else if (player == PLAYER_2) {
-        p2AvailableTiles = mask;
+        p2AvailableTiles = tiles;
     }
 }
 
@@ -560,8 +554,8 @@ void HexukiBitboard::clearBoard() {
 void HexukiBitboard::loadPosition(const std::string& position) {
     // Clear everything first
     clearBoard();
-    p1AvailableTiles = 0x3FE;  // Default: all tiles 1-9 available
-    p2AvailableTiles = 0x3FE;
+    p1AvailableTiles = {1, 2, 3, 4, 5, 6, 7, 8, 9};  // Default: all tiles 1-9 available
+    p2AvailableTiles = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     currentPlayer = PLAYER_1;
     moveCount = 0;
     history.clear();

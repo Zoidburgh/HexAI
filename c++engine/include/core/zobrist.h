@@ -36,6 +36,14 @@ private:
     // Sized for MAX_TILE_VALUE to handle any tile values (e.g., if using tiles 2,4,6,8... up to 18)
     static uint64_t tileHashes[NUM_HEXES][MAX_TILE_VALUE + 1];  // [hexId][tileValue]
     static uint64_t playerHashes[2];                             // [player-1]
+
+    // Tile count hashes for available tiles (supports duplicates)
+    // tileCountHashes[player][tileValue][count] = hash for having 'count' of 'tileValue' for 'player'
+    // player: 0 = P1, 1 = P2
+    // tileValue: 1-9
+    // count: 0-9 (max 9 of any tile value)
+    static uint64_t tileCountHashes[2][MAX_TILE_VALUE + 1][10];
+
     static bool initialized;
 };
 

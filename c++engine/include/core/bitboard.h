@@ -80,10 +80,10 @@ private:
     // Using 4 bits per hex (0-15 range, we use 0-9)
     uint8_t hexValues[NUM_HEXES];
 
-    // Available tiles for each player (bitset: bit i = tile value i available)
-    // Bit 0 unused, bits 1-9 represent tiles 1-9
-    uint16_t p1AvailableTiles;  // 9 bits (0x3FE = all tiles 1-9)
-    uint16_t p2AvailableTiles;
+    // Available tiles for each player (array-based to support duplicates)
+    // Can now handle asymmetric tiles like [1,1,1,1,1,1,1,1,1] vs [2,2,2,2,2,2,2,2,2]
+    std::vector<int> p1AvailableTiles;  // e.g. [1,2,3,4,5,6,7,8,9] or [1,1,1,1,1,1,1,1,1]
+    std::vector<int> p2AvailableTiles;
 
     // Metadata
     int currentPlayer;  // PLAYER_1 or PLAYER_2
@@ -98,8 +98,9 @@ private:
     // Move history (for unmake move)
     struct MoveRecord {
         Move move;
-        uint16_t previousP1Tiles;
-        uint16_t previousP2Tiles;
+        std::vector<int> previousP1Tiles;  // Full tile array snapshot
+        std::vector<int> previousP2Tiles;  // Full tile array snapshot
+        int removedTileIndex;  // Index of tile that was removed (for undo with duplicates)
         bool previousSymmetryPossible;
     };
     std::vector<MoveRecord> history;

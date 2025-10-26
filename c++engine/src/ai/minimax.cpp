@@ -260,11 +260,22 @@ SearchResult findBestMove(HexukiBitboard& board, const SearchConfig& config) {
     }
 
     if (moves.size() == 1) {
-        // Only one move - return immediately
+        // Only one move - still need to search ahead to get accurate score!
+        // Don't just return current evaluation - make the move and evaluate the resulting position
         result.bestMove = moves[0];
-        result.score = evaluate(board);
-        result.depth = 0;
-        result.nodesSearched = 1;
+
+        // Make the move, search the resulting position, then unmake
+        board.makeMove(moves[0]);
+        int nodesSearched = 0;
+        result.score = -alphaBeta(board, config.maxDepth - 1, -INF, INF, tt, nodesSearched, startTime, config.timeLimitMs);
+        board.unmakeMove();
+
+        result.depth = config.maxDepth;
+        result.nodesSearched = nodesSearched;
+
+        auto endTime = std::chrono::steady_clock::now();
+        result.timeMs = std::chrono::duration<double, std::milli>(endTime - startTime).count();
+
         return result;
     }
 
@@ -377,7 +388,7 @@ SearchResult findBestMove(HexukiBitboard& board, int depth, int timeLimitMs) {
     config.useIterativeDeepening = true;
     config.useMoveOrdering = true;
     config.useTranspositionTable = true;
-    config.verbose = false;
+    config.verbose = false;  // Disable verbose logging
 
     return findBestMove(board, config);
 }

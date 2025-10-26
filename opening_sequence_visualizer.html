@@ -1701,6 +1701,21 @@
                 msg = `Game Over - Player ${winner} Wins! P1: ${scores.player1}, P2: ${scores.player2}`;
             }
 
+            // Log final scores to console
+            const differential = scores.player1 - scores.player2;
+            console.log(`\n${'='.repeat(50)}`);
+            console.log(`🏁 GAME OVER - FINAL RESULT`);
+            console.log(`${'='.repeat(50)}`);
+            console.log(`P1 Final Score: ${scores.player1}`);
+            console.log(`P2 Final Score: ${scores.player2}`);
+            console.log(`Differential: ${differential > 0 ? 'P1' : differential < 0 ? 'P2' : 'DRAW'} ${differential !== 0 ? Math.abs(differential) : ''}`);
+            if (winner === 0) {
+                console.log(`Result: DRAW`);
+            } else {
+                console.log(`Winner: Player ${winner} by ${Math.abs(differential)} points`);
+            }
+            console.log(`${'='.repeat(50)}\n`);
+
             document.getElementById('gameEndedMsg').innerHTML = `<div class="game-ended">${msg}</div>`;
             document.getElementById('nextMoveBtn').disabled = true;
             // Keep undo enabled so you can step back from game end
@@ -2119,20 +2134,7 @@
          * Routes to either JavaScript or C++ WASM engine based on minimaxEngine setting
          */
         function runMinimax(game, depth = 20, jsMinimax = null) {
-            // C++ engine cannot handle asymmetric tiles with duplicates (uses bitmasks)
-            // Force JavaScript engine for asymmetric tiles
-            if (useAsymmetricTiles && minimaxEngine === 'cpp') {
-                if (!window.asymmetricTilesWarningShown) {
-                    console.warn('⚠️ C++ Minimax disabled for asymmetric tiles (uses bitmasks, cannot handle duplicates)');
-                    console.warn('   Using JavaScript Minimax instead.');
-                    window.asymmetricTilesWarningShown = true;
-                }
-                // Force JavaScript engine
-                const solver = jsMinimax || minimaxSolver;
-                return solver.getBestMove(game);
-            }
-
-            // Use C++ WASM engine if selected and available
+            // Use C++ WASM engine if selected and available (now supports asymmetric tiles!)
             if (minimaxEngine === 'cpp' && wasmModule) {
                 // Convert game state to C++ format
                 const position = gameToPositionString(game);
@@ -2141,6 +2143,9 @@
                 // Run C++ Minimax
                 const resultJson = wasmModule.minimaxFindBestMove(depth, 30000);
                 const result = JSON.parse(resultJson);
+
+                // Debug: Log minimax search stats
+                console.log(`C++ Minimax: depth=${result.depth}, nodes=${result.nodes}, score=${result.score}, time=${result.timeMs?.toFixed(0)}ms`);
 
                 // Return in format expected by caller: { move: { hexId, tileValue } }
                 return {
@@ -2192,22 +2197,7 @@
          * For very large sim counts, you must wait for completion before cancel takes effect.
          */
         async function runMCTSChunked(game, totalSims, aiPlayer = null) {
-            // C++ engine cannot handle asymmetric tiles with duplicates (uses bitmasks)
-            // Force JavaScript engine for asymmetric tiles
-            if (useAsymmetricTiles && mctsEngine === 'cpp') {
-                if (!window.asymmetricTilesMCTSWarningShown) {
-                    console.warn('⚠️ C++ MCTS disabled for asymmetric tiles (uses bitmasks, cannot handle duplicates)');
-                    console.warn('   Using JavaScript MCTS instead.');
-                    window.asymmetricTilesMCTSWarningShown = true;
-                }
-                // Force JavaScript engine
-                const ai = aiPlayer || mctsAI;
-                await sleep(0); // Yield to browser
-                const result = await ai.getBestMove(game);
-                return result;
-            }
-
-            // Use C++ WASM engine if selected and available
+            // Use C++ WASM engine if selected and available (now supports asymmetric tiles!)
             if (mctsEngine === 'cpp' && wasmModule) {
                 // Convert game state to C++ format
                 const position = gameToPositionString(game);
