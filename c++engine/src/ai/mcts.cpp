@@ -323,12 +323,18 @@ bool MCTS::isTerminal(const HexukiBitboard& board) const {
 }
 
 double MCTS::evaluateTerminal(const HexukiBitboard& board) const {
-    // ALWAYS return from Player 1's perspective (1.0 = P1 wins, 0.0 = P2 wins)
-    // This matches the JavaScript implementation
+    // ALWAYS return from Player 1's perspective
+    // 1.0 = P1 wins, 0.0 = P2 wins, 0.5 = draw
     int p1Score = board.getScore(PLAYER_1);
     int p2Score = board.getScore(PLAYER_2);
 
-    return (p1Score > p2Score) ? 1.0 : 0.0;
+    if (p1Score > p2Score) {
+        return 1.0;  // P1 wins
+    } else if (p1Score < p2Score) {
+        return 0.0;  // P2 wins
+    } else {
+        return 0.5;  // Draw - properly counted as neutral
+    }
 }
 
 Move MCTS::selectRandomMove(const std::vector<Move>& moves) {
