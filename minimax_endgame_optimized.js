@@ -117,20 +117,29 @@ class MinimaxEndgameSolverOptimized {
      */
     makeMove(move) {
         const hex = this.game.board[move.hexId];
+        const player = this.game.currentPlayer;
+
+        // Save state before making move
         const undoInfo = {
             hexId: move.hexId,
             tileValue: move.tileValue,
             prevValue: hex.value,
             prevOwner: hex.owner,
-            player: this.game.currentPlayer,
-            tileIndex: this.game.currentPlayer === 1 ?
-                this.game.player1Tiles.indexOf(move.tileValue) :
-                this.game.player2Tiles.indexOf(move.tileValue),
+            player: player,
             gameEnded: this.game.gameEnded,
             moveCount: this.game.moveCount
         };
 
+        // Make the move (this updates lastRemovedTileIndex in asymmetric engine)
         this.game.makeMove(move.hexId, move.tileValue);
+
+        // Get the actual tile index that was removed (supports duplicate tile values)
+        undoInfo.tileIndex = this.game.lastRemovedTileIndex !== undefined ?
+            this.game.lastRemovedTileIndex :
+            // Fallback for engines that don't track it (standard engine)
+            (player === 1 ?
+                this.game.player1Tiles.length : // Index where it was removed (array is now shorter)
+                this.game.player2Tiles.length);
 
         return undoInfo;
     }
@@ -141,19 +150,19 @@ class MinimaxEndgameSolverOptimized {
     undoMove(undoInfo) {
         const hex = this.game.board[undoInfo.hexId];
 
-        // Restore tile to player's hand (use saved tileValue, not current hex value!)
+        // Restore tile to player's hand at the correct index
+        // This properly handles duplicate tile values (e.g., all 1's vs all 2's)
         if (undoInfo.player === 1) {
             this.game.player1Tiles.splice(undoInfo.tileIndex, 0, undoInfo.tileValue);
-            this.game.player1UsedPositions.delete(undoInfo.hexId);
         } else {
             this.game.player2Tiles.splice(undoInfo.tileIndex, 0, undoInfo.tileValue);
-            this.game.player2UsedPositions.delete(undoInfo.hexId);
         }
 
         // Restore hex to previous state
         hex.value = undoInfo.prevValue;
         hex.owner = undoInfo.prevOwner;
 
+        // Restore game state
         this.game.currentPlayer = undoInfo.player;
         this.game.gameEnded = undoInfo.gameEnded;
         this.game.moveCount = undoInfo.moveCount;

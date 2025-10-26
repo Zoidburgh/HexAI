@@ -272,6 +272,12 @@ class HexukiGameEngineAsymmetric {
     isMoveLegal(hexId) {
         const hex = this.board[hexId];
 
+        // Check if hex exists
+        if (!hex) {
+            console.error(`Invalid hexId: ${hexId} (board has ${this.board.length} hexes)`);
+            return false;
+        }
+
         // Check if hex is empty
         if (hex.value !== null) {
             return false;
@@ -323,13 +329,19 @@ class HexukiGameEngineAsymmetric {
 
         // Move is valid - finalize it
         // Remove tile from available tiles
+        let removedTileIndex;
         if (this.currentPlayer === 1) {
             const idx = this.player1Tiles.indexOf(tileValue);
             this.player1Tiles.splice(idx, 1);
+            removedTileIndex = idx;
         } else {
             const idx = this.player2Tiles.indexOf(tileValue);
             this.player2Tiles.splice(idx, 1);
+            removedTileIndex = idx;
         }
+
+        // Store the removed tile index for potential undo operations
+        this.lastRemovedTileIndex = removedTileIndex;
 
         this.moveCount++;
 

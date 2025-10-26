@@ -444,6 +444,165 @@
             font-weight: 500;
         }
 
+        /* AI Settings Panel */
+        .ai-settings-panel {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(155, 89, 182, 0.1) 100%);
+            border: 2px solid rgba(52, 152, 219, 0.3);
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #3498db 0%, #9b59b6 100%);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .settings-header:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #8e44ad 100%);
+        }
+
+        .settings-summary {
+            color: white;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .settings-toggle {
+            color: white;
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+
+        .settings-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .settings-content {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .settings-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-section h4 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.1em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+
+        .settings-section label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .setting-control {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 0.95em;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .setting-control:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        input[type="range"].setting-control {
+            padding: 0;
+            height: 6px;
+            cursor: pointer;
+            appearance: none;
+            background: linear-gradient(to right, #3498db 0%, #9b59b6 100%);
+        }
+
+        input[type="range"].setting-control::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="range"].setting-control::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border: none;
+        }
+
+        input[type="checkbox"].setting-control {
+            width: auto;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        /* AI Status Display */
+        .ai-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(26, 188, 156, 0.15) 100%);
+            border-top: 2px solid rgba(46, 204, 113, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-icon {
+            font-size: 1.3em;
+            margin-right: 10px;
+            animation: rotate 3s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .status-text {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
         .game-ended {
             background: #27ae60;
             color: white;
@@ -472,87 +631,12 @@
         </div>
 
         <h2 style="margin-top: 25px;">⚙️ AI Configuration</h2>
-        <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9em;">
-            <strong>⚠️ Note:</strong> High simulation counts (10k+) may trigger browser "unresponsive script" warnings. Click "Wait" to let the AI finish thinking. This is normal behavior.
-        </div>
-        <div class="select-row">
-            <label>🚀 MCTS Engine:</label>
-            <select id="mctsEngineSelect">
-                <option value="javascript">JavaScript (slower, more tested)</option>
-                <option value="cpp" selected>C++ WebAssembly (36-80× faster!) ⚡</option>
-            </select>
-            <div style="margin-top: 5px; padding: 8px; background: #e3f2fd; border-radius: 4px; font-size: 0.85em; color: #1565c0;">
-                <strong>C++ Engine:</strong> Runs 36-80× faster than JavaScript! Same algorithm, just compiled to native WebAssembly.
+        <div style="background: #e3f2fd; border: 1px solid #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div style="font-size: 0.95em; color: #1565c0; margin-bottom: 8px;">
+                <strong>✨ Defaults:</strong> C++ WASM Engine | 20k MCTS Simulations | Minimax @10 empty hexes
             </div>
-        </div>
-        <div class="select-row">
-            <label>MCTS Simulations per Move:</label>
-            <select id="mctsSimsSelect">
-                <option value="100">100 (Fast preview)</option>
-                <option value="300">300 (Default - Layer 2 quality)</option>
-                <option value="500">500 (Good quality)</option>
-                <option value="1000" selected>1000 (High quality)</option>
-                <option value="2000">2000 (Layer 1 quality)</option>
-                <option value="3000">3000 (Very high quality)</option>
-                <option value="5000">5000 (Near-maximum quality)</option>
-                <option value="7500">7500 (Very high quality)</option>
-                <option value="10000">10000 (Maximum quality - slow)</option>
-                <option value="15000">15000 (Maximum quality - very slow)</option>
-                <option value="20000">20000 (Extreme quality - extremely slow)</option>
-                <option value="50000">50000 (C++ only - ultra quality)</option>
-                <option value="100000">100000 (C++ only - maximum)</option>
-                <option value="500000">500000 (C++ only - extreme)</option>
-                <option value="1000000">1000000 (C++ only - 1M sims)</option>
-                <option value="2000000">2000000 (C++ only - 2M sims)</option>
-            </select>
-        </div>
-        <div class="select-row">
-            <label>
-                <input type="checkbox" id="useMCTSMinimaxRolloutsCheckbox">
-                Enable MCTS Minimax Rollouts (hybrid MCTS - better opening moves)
-            </label>
-        </div>
-        <div class="select-row" id="mctsMinimaxThresholdRow" style="display: none;">
-            <label>MCTS switches to minimax at <span id="mctsMinimaxThresholdValue">7</span> empty hexes:</label>
-            <input type="range" id="mctsMinimaxThreshold" min="4" max="12" value="7"
-                   style="width: 100%; margin-top: 5px;">
-        </div>
-        <div class="select-row">
-            <label>
-                <input type="checkbox" id="useMinimaxCheckbox" checked>
-                Enable Minimax Endgame (perfect play)
-            </label>
-        </div>
-        <div class="select-row" id="minimaxThresholdRow">
-            <label>Minimax starts at <span id="thresholdValue">6</span> empty hexes:</label>
-            <input type="range" id="minimaxThreshold" min="0" max="18" value="6"
-                   style="width: 100%; margin-top: 5px;">
-        </div>
-        <div class="select-row">
-            <label>🚀 Minimax Engine:</label>
-            <select id="minimaxEngineSelect">
-                <option value="javascript">JavaScript (slower, more tested)</option>
-                <option value="cpp" selected>C++ WebAssembly (555× faster!) ⚡</option>
-            </select>
-        </div>
-
-        <div class="select-row">
-            <label>
-                <input type="checkbox" id="useMinimaxRolloutsCheckboxGlobal">
-                <strong>🚀 Hybrid MCTS (Minimax-Terminated Rollouts)</strong>
-            </label>
-            <div id="minimaxRolloutsSettingsGlobal" style="margin-top: 5px; margin-left: 20px; padding: 8px; background: #e8f5e9; border-radius: 4px; display: none;">
-                <div style="color: #666; font-size: 0.85em; margin-bottom: 8px;">
-                    <strong>EXPERIMENTAL:</strong> Uses random MCTS rollouts until few hexes remain, then switches to perfect minimax evaluation. This makes MCTS tactically sharper but 2-3× slower.
-                </div>
-                <label style="display: inline-block;">
-                    Switch to minimax at:
-                    <input type="number" id="minimaxThresholdGlobal" min="0" max="18" value="6" style="width: 60px; padding: 4px; margin-left: 5px; border-radius: 4px; border: 1px solid #ddd;">
-                    empty hexes
-                </label>
-                <div style="margin-top: 5px; color: #555; font-size: 0.8em;">
-                    Lower = faster but less tactical | Higher = slower but more accurate endgame evaluation
-                </div>
+            <div style="font-size: 0.85em; color: #555;">
+                💡 All AI settings can be adjusted during gameplay using the settings panel below the control buttons.
             </div>
         </div>
 
@@ -651,10 +735,92 @@
                 <button class="btn" id="nextMoveBtn" disabled>Make Next Move (AI)</button>
                 <button class="btn" id="undoBtn" disabled>Undo Move</button>
                 <button class="btn" id="autoPlayBtn" disabled>Auto-Play to End</button>
+                <button class="btn" id="stopAutoPlayBtn" style="display: none; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">⏹ Stop Auto-Play</button>
                 <button class="btn" id="resetBtn">Reset</button>
                 <button class="btn" id="changeOpeningBtn">Change Opening</button>
                 <button class="btn" id="showSimulationBtn" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">Toggle Simulation Panel</button>
             </div>
+
+            <!-- AI Settings Panel (Collapsible) -->
+            <div class="ai-settings-panel" id="aiSettingsPanel">
+                <div class="settings-header" onclick="toggleSettings()">
+                    <div class="settings-summary" id="settingsSummary">
+                        ⚙️ AI Settings: MCTS 20k (C++) | Minimax @10 empty (C++) | Hybrid: OFF
+                    </div>
+                    <div class="settings-toggle" id="settingsToggle">▼</div>
+                </div>
+
+                <div class="settings-content" id="settingsContent" style="display: none;">
+                    <div class="settings-grid">
+                        <!-- MCTS Settings -->
+                        <div class="settings-section">
+                            <h4>🎯 MCTS Configuration</h4>
+                            <label>Simulations per move:</label>
+                            <select id="mctsSimsLive" class="setting-control">
+                                <option value="1000">1,000 (Fast)</option>
+                                <option value="5000">5,000</option>
+                                <option value="10000">10,000</option>
+                                <option value="20000" selected>20,000 (Default)</option>
+                                <option value="50000">50,000</option>
+                                <option value="100000">100,000</option>
+                                <option value="200000">200,000</option>
+                                <option value="500000">500,000 (Slow)</option>
+                                <option value="1000000">1,000,000 (Very Slow)</option>
+                                <option value="2000000">2,000,000 (Extreme)</option>
+                            </select>
+
+                            <label style="margin-top: 10px;">Engine:</label>
+                            <select id="mctsEngineLive" class="setting-control">
+                                <option value="javascript">JavaScript (slower)</option>
+                                <option value="cpp" selected>C++ WebAssembly (36-80× faster) ⚡</option>
+                            </select>
+                        </div>
+
+                        <!-- Pure Minimax Settings -->
+                        <div class="settings-section">
+                            <h4>🎲 Pure Minimax (Endgame)</h4>
+                            <label>Switch from MCTS at <span id="minimaxThresholdValueLive">10</span> empty hexes:</label>
+                            <input type="range" id="minimaxThresholdLive" class="setting-control" min="0" max="18" value="10" step="1">
+                            <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                                0 = never use minimax, 18 = always use minimax
+                            </div>
+
+                            <label style="margin-top: 10px;">Engine:</label>
+                            <select id="minimaxEngineLive" class="setting-control">
+                                <option value="javascript">JavaScript (slower)</option>
+                                <option value="cpp" selected>C++ WebAssembly (555× faster) ⚡</option>
+                            </select>
+                        </div>
+
+                        <!-- Hybrid MCTS Settings -->
+                        <div class="settings-section">
+                            <h4>🔀 Hybrid MCTS (Minimax Rollouts)</h4>
+                            <label>
+                                <input type="checkbox" id="useMCTSMinimaxLive" class="setting-control">
+                                <strong>Enable minimax rollouts</strong> (better quality, slower)
+                            </label>
+                            <div style="font-size: 0.85em; color: #666; margin: 5px 0;">
+                                Uses minimax for endgame evaluation during MCTS simulations
+                            </div>
+
+                            <div id="mctsMinimaxThresholdRowLive" style="margin-top: 10px; display: none;">
+                                <label>Rollout threshold at <span id="mctsMinimaxThresholdValueLive">4</span> empty hexes:</label>
+                                <input type="range" id="mctsMinimaxThresholdLive" class="setting-control" min="2" max="12" value="4" step="1">
+                                <div style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                                    MCTS switches to minimax evaluation at this depth (2-12 hexes)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live AI Status Display -->
+                <div class="ai-status" id="aiStatus" style="display: none;">
+                    <span class="status-icon">🤖</span>
+                    <span class="status-text" id="statusText">Thinking...</span>
+                </div>
+            </div>
+
             <div class="game-info" id="gameInfo">Load opening data to begin</div>
             <div id="gameEndedMsg"></div>
         </div>
@@ -811,13 +977,13 @@
         let completeGameLogs = []; // Store complete move-by-move game logs
         let isAutoPlaying = false;
 
-        // AI Configuration
-        let mctsSims = 1000;
-        let minimaxThreshold = 6;
+        // AI Configuration (Defaults)
+        let mctsSims = 20000;  // 20k simulations - good balance of speed and quality
+        let minimaxThreshold = 10;  // Switch to minimax at 10 empty hexes
         let useMinimaxEndgame = true;
         let useMinimaxRollouts = false; // Hybrid MCTS with minimax-terminated rollouts
-        let useMCTSMinimaxRollouts = false; // Use minimax for MCTS rollout evaluation
-        let mctsMinimaxThreshold = 7; // Switch to minimax at this many empty hexes
+        let useMCTSMinimaxRollouts = false; // Use minimax for MCTS rollout evaluation (opt-in)
+        let mctsMinimaxThreshold = 4; // Rollout threshold (when enabled)
         let mctsEngine = 'cpp'; // 'javascript' or 'cpp'
         let minimaxEngine = 'cpp'; // 'javascript' or 'cpp'
         let wasmModule = null; // C++ WASM module
@@ -877,6 +1043,81 @@
                     game.player2Tiles = p2Tiles;
                 }
             }
+        }
+
+        // ============================================================================
+        // AI Settings Panel Functions
+        // ============================================================================
+
+        /**
+         * Toggle AI settings panel expand/collapse
+         */
+        function toggleSettings() {
+            const content = document.getElementById('settingsContent');
+            const toggle = document.getElementById('settingsToggle');
+
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.classList.add('expanded');
+                toggle.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                toggle.classList.remove('expanded');
+                toggle.textContent = '▼';
+            }
+        }
+
+        /**
+         * Update settings summary bar to reflect current configuration
+         */
+        function updateSettingsSummary() {
+            const mctsSimsText = mctsSims >= 1000
+                ? `${(mctsSims / 1000).toFixed(0)}k`
+                : mctsSims.toString();
+
+            const mctsEngineText = mctsEngine === 'cpp' ? 'C++' : 'JS';
+            const minimaxEngineText = minimaxEngine === 'cpp' ? 'C++' : 'JS';
+
+            const hybridText = useMCTSMinimaxRollouts
+                ? `ON (rollouts @${mctsMinimaxThreshold})`
+                : 'OFF';
+
+            const summary = `⚙️ AI: MCTS ${mctsSimsText} (${mctsEngineText}) | Minimax @${minimaxThreshold} empty (${minimaxEngineText}) | Hybrid: ${hybridText}`;
+
+            document.getElementById('settingsSummary').textContent = summary;
+        }
+
+        /**
+         * Show AI status message
+         */
+        function showAIStatus(message) {
+            const statusElement = document.getElementById('aiStatus');
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = message;
+            statusElement.style.display = 'flex';
+        }
+
+        /**
+         * Hide AI status message
+         */
+        function hideAIStatus() {
+            const statusElement = document.getElementById('aiStatus');
+            statusElement.style.display = 'none';
+        }
+
+        /**
+         * Stop auto-play between moves
+         */
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            console.log('Stopping auto-play...');
+
+            // Hide stop button, show auto-play button
+            document.getElementById('stopAutoPlayBtn').style.display = 'none';
+            document.getElementById('autoPlayBtn').disabled = false;
+            document.getElementById('nextMoveBtn').disabled = false;
+            document.getElementById('gameInfo').textContent =
+                `Move ${moveHistory.length + 1} - P${currentGame.currentPlayer}'s turn (auto-play stopped)`;
         }
 
         // File loading
@@ -1020,74 +1261,7 @@
             document.getElementById('startGameBtn').disabled = false;
         });
 
-        // AI Configuration listeners
-        document.getElementById('mctsSimsSelect').addEventListener('change', (e) => {
-            mctsSims = parseInt(e.target.value);
-        });
-
-        document.getElementById('mctsEngineSelect').addEventListener('change', (e) => {
-            mctsEngine = e.target.value;
-            console.log(`Switched to ${mctsEngine} MCTS engine`);
-
-            // Warn if C++ engine not loaded
-            if (mctsEngine === 'cpp' && !wasmModule) {
-                alert('C++ WASM engine not loaded yet. Please wait or use JavaScript engine.');
-                e.target.value = 'javascript';
-                mctsEngine = 'javascript';
-            }
-        });
-
-        document.getElementById('minimaxEngineSelect').addEventListener('change', (e) => {
-            minimaxEngine = e.target.value;
-            console.log(`Switched to ${minimaxEngine} Minimax engine`);
-
-            // Warn if C++ engine not loaded
-            if (minimaxEngine === 'cpp' && !wasmModule) {
-                alert('C++ WASM engine not loaded yet. Please wait or use JavaScript engine.');
-                e.target.value = 'javascript';
-                minimaxEngine = 'javascript';
-            }
-        });
-
-        document.getElementById('useMCTSMinimaxRolloutsCheckbox').addEventListener('change', (e) => {
-            useMCTSMinimaxRollouts = e.target.checked;
-            document.getElementById('mctsMinimaxThresholdRow').style.display =
-                useMCTSMinimaxRollouts ? 'block' : 'none';
-        });
-
-        document.getElementById('mctsMinimaxThreshold').addEventListener('input', (e) => {
-            mctsMinimaxThreshold = parseInt(e.target.value);
-            document.getElementById('mctsMinimaxThresholdValue').textContent = mctsMinimaxThreshold;
-        });
-
-        document.getElementById('useMinimaxCheckbox').addEventListener('change', (e) => {
-            useMinimaxEndgame = e.target.checked;
-            document.getElementById('minimaxThresholdRow').style.display =
-                useMinimaxEndgame ? 'block' : 'none';
-        });
-
-        document.getElementById('minimaxThreshold').addEventListener('input', (e) => {
-            minimaxThreshold = parseInt(e.target.value);
-            document.getElementById('thresholdValue').textContent = minimaxThreshold;
-        });
-
-        document.getElementById('useMinimaxRolloutsCheckboxGlobal').addEventListener('change', (e) => {
-            useMinimaxRollouts = e.target.checked;
-            document.getElementById('minimaxRolloutsSettingsGlobal').style.display = e.target.checked ? 'block' : 'none';
-        });
-
-        document.getElementById('minimaxThresholdGlobal').addEventListener('change', (e) => {
-            const threshold = parseInt(e.target.value);
-            if (!isNaN(threshold) && threshold >= 0 && threshold <= 18) {
-                minimaxThreshold = threshold;
-                // Sync with the old threshold input if it exists
-                const oldThresholdInput = document.getElementById('minimaxThreshold');
-                if (oldThresholdInput) {
-                    oldThresholdInput.value = threshold;
-                }
-            }
-        });
-
+        // Game Mode listeners
         document.getElementById('useFreeOpeningCheckbox').addEventListener('change', (e) => {
             useFreeOpening = e.target.checked;
             updateTotalGamesDisplay();  // Update display when free opening mode changes
@@ -1097,6 +1271,73 @@
             useAsymmetricTiles = e.target.checked;
             document.getElementById('customTilesSection').style.display = e.target.checked ? 'block' : 'none';
         });
+
+        // ============================================================================
+        // Live AI Settings Panel Event Listeners
+        // ============================================================================
+
+        // MCTS Simulations (Live)
+        document.getElementById('mctsSimsLive').addEventListener('change', (e) => {
+            mctsSims = parseInt(e.target.value);
+            updateSettingsSummary();
+            console.log(`Updated MCTS simulations to ${mctsSims}`);
+        });
+
+        // MCTS Engine (Live)
+        document.getElementById('mctsEngineLive').addEventListener('change', (e) => {
+            mctsEngine = e.target.value;
+            updateSettingsSummary();
+            console.log(`Switched to ${mctsEngine} MCTS engine`);
+
+            // Warn if C++ engine not loaded
+            if (mctsEngine === 'cpp' && !wasmModule) {
+                alert('C++ WASM engine not loaded yet. Please wait or use JavaScript engine.');
+                e.target.value = 'javascript';
+                mctsEngine = 'javascript';
+                updateSettingsSummary();
+            }
+        });
+
+        // Minimax Threshold (Live)
+        document.getElementById('minimaxThresholdLive').addEventListener('input', (e) => {
+            minimaxThreshold = parseInt(e.target.value);
+            document.getElementById('minimaxThresholdValueLive').textContent = minimaxThreshold;
+            updateSettingsSummary();
+        });
+
+        // Minimax Engine (Live)
+        document.getElementById('minimaxEngineLive').addEventListener('change', (e) => {
+            minimaxEngine = e.target.value;
+            updateSettingsSummary();
+            console.log(`Switched to ${minimaxEngine} Minimax engine`);
+
+            // Warn if C++ engine not loaded
+            if (minimaxEngine === 'cpp' && !wasmModule) {
+                alert('C++ WASM engine not loaded yet. Please wait or use JavaScript engine.');
+                e.target.value = 'javascript';
+                minimaxEngine = 'javascript';
+                updateSettingsSummary();
+            }
+        });
+
+        // MCTS Minimax Rollouts (Live)
+        document.getElementById('useMCTSMinimaxLive').addEventListener('change', (e) => {
+            useMCTSMinimaxRollouts = e.target.checked;
+            document.getElementById('mctsMinimaxThresholdRowLive').style.display =
+                useMCTSMinimaxRollouts ? 'block' : 'none';
+            updateSettingsSummary();
+            console.log(`Hybrid MCTS (minimax rollouts): ${useMCTSMinimaxRollouts ? 'ON' : 'OFF'}`);
+        });
+
+        // MCTS Minimax Threshold (Live)
+        document.getElementById('mctsMinimaxThresholdLive').addEventListener('input', (e) => {
+            mctsMinimaxThreshold = parseInt(e.target.value);
+            document.getElementById('mctsMinimaxThresholdValueLive').textContent = mctsMinimaxThreshold;
+            updateSettingsSummary();
+        });
+
+        // Initialize settings summary on page load
+        updateSettingsSummary();
 
         document.getElementById('exhaustiveOpeningCheckbox').addEventListener('change', (e) => {
             useExhaustiveOpening = e.target.checked;
@@ -1193,13 +1434,6 @@
             }
         });
 
-        document.getElementById('minimaxThreshold').addEventListener('change', (e) => {
-            const threshold = parseInt(e.target.value);
-            if (!isNaN(threshold) && threshold >= 0 && threshold <= 18) {
-                minimaxThreshold = threshold;
-            }
-        });
-
         document.getElementById('startGameBtn').addEventListener('click', () => startNewGame(false));
         document.getElementById('startFromScratchBtn').addEventListener('click', () => {
             console.log('Start from scratch button clicked!');
@@ -1213,6 +1447,7 @@
         document.getElementById('nextMoveBtn').addEventListener('click', makeNextMove);
         document.getElementById('undoBtn').addEventListener('click', undoMove);
         document.getElementById('autoPlayBtn').addEventListener('click', autoPlayToEnd);
+        document.getElementById('stopAutoPlayBtn').addEventListener('click', stopAutoPlay);
         document.getElementById('resetBtn').addEventListener('click', resetGame);
         document.getElementById('changeOpeningBtn').addEventListener('click', changeOpening);
 
@@ -1316,6 +1551,7 @@
         async function makeNextMove() {
             if (currentGame.gameEnded) return;
 
+            // Disable buttons during computation
             document.getElementById('nextMoveBtn').disabled = true;
             document.getElementById('autoPlayBtn').disabled = true;
 
@@ -1323,11 +1559,26 @@
             const emptyHexes = currentGame.board.filter(h => h.value === null).length;
             const useMinimax = useMinimaxEndgame && minimaxSolver && emptyHexes <= minimaxThreshold;
 
+            // Show AI status in both places
+            let statusMsg;
             if (useMinimax) {
+                const engineText = minimaxEngine === 'cpp' ? 'C++' : 'JavaScript';
+                statusMsg = `Using ${engineText} Minimax (${emptyHexes} empty hexes remaining)`;
                 document.getElementById('gameInfo').textContent = `AI thinking... (Minimax - ${emptyHexes} empty)`;
             } else {
+                const engineText = mctsEngine === 'cpp' ? 'C++' : 'JavaScript';
+                const simsText = mctsSims >= 1000 ? `${(mctsSims / 1000).toFixed(0)}k` : mctsSims;
+
+                if (useMCTSMinimaxRollouts) {
+                    statusMsg = `Using Hybrid ${engineText} MCTS (${simsText} sims, minimax rollouts @${mctsMinimaxThreshold} empty)`;
+                } else {
+                    statusMsg = `Using ${engineText} MCTS (${simsText} simulations)`;
+                }
+
                 document.getElementById('gameInfo').textContent = `AI thinking... (MCTS - ${mctsSims} sims)`;
             }
+
+            showAIStatus(statusMsg);
 
             // Use timeout to let UI update
             await sleep(100);
@@ -1336,6 +1587,42 @@
             let result;
             if (useMinimax) {
                 result = runMinimax(currentGame, 20);
+
+                // Log predicted outcome if both players play perfectly
+                if (result.score !== undefined) {
+                    const currentScores = currentGame.calculateScores();
+                    const currentPlayer = currentGame.currentPlayer;
+                    const minimaxScore = result.score;
+
+                    // Minimax score is differential from current player's perspective
+                    // Positive = current player winning, Negative = current player losing
+
+                    // Convert differential to P1's perspective for clarity
+                    let differentialFromP1;
+                    if (currentPlayer === 1) {
+                        differentialFromP1 = minimaxScore;  // Already P1's perspective
+                    } else {
+                        differentialFromP1 = -minimaxScore; // Invert from P2's perspective
+                    }
+
+                    console.log('=== MINIMAX PREDICTION (Perfect Play) ===');
+                    console.log(`Current Scores: P1: ${currentScores.player1} | P2: ${currentScores.player2}`);
+                    console.log(`EXACT Final Differential: ${differentialFromP1 > 0 ? 'P1 +' : 'P2 +'}${Math.abs(differentialFromP1)} points`);
+
+                    if (differentialFromP1 > 0) {
+                        console.log(`🏆 P1 WINS by exactly ${differentialFromP1} points (deterministic)`);
+                    } else if (differentialFromP1 < 0) {
+                        console.log(`🏆 P2 WINS by exactly ${Math.abs(differentialFromP1)} points (deterministic)`);
+                    } else {
+                        console.log(`🤝 EXACT DRAW (both players tie)`);
+                    }
+
+                    const remainingTiles = currentGame.player1Tiles.length + currentGame.player2Tiles.length;
+                    const emptyHexes = currentGame.board.filter(h => h.value === null).length;
+                    console.log(`Game state: ${emptyHexes} empty hexes, ${remainingTiles} tiles remaining`);
+                    console.log(`This outcome is GUARANTEED with perfect play from both sides`);
+                    console.log('=======================================');
+                }
             } else {
                 // Run MCTS in chunks to prevent browser "unresponsive script" warning
                 result = await runMCTSChunked(currentGame, mctsSims);
@@ -1369,6 +1656,9 @@
 
             updateDisplay();
 
+            // Hide AI status after move completes
+            hideAIStatus();
+
             if (currentGame.gameEnded) {
                 handleGameEnd();
             } else {
@@ -1384,7 +1674,8 @@
         async function autoPlayToEnd() {
             isAutoPlaying = true;
             document.getElementById('nextMoveBtn').disabled = true;
-            document.getElementById('autoPlayBtn').disabled = true;
+            document.getElementById('autoPlayBtn').style.display = 'none';
+            document.getElementById('stopAutoPlayBtn').style.display = 'inline-block';
 
             while (!currentGame.gameEnded && isAutoPlaying) {
                 await makeNextMove();
@@ -1392,6 +1683,10 @@
             }
 
             isAutoPlaying = false;
+
+            // Restore buttons after auto-play ends
+            document.getElementById('autoPlayBtn').style.display = 'inline-block';
+            document.getElementById('stopAutoPlayBtn').style.display = 'none';
         }
 
         function handleGameEnd() {
@@ -1483,46 +1778,32 @@
 
             // For asymmetric games, only show tiles that are in the player's actual tile set
             if (useAsymmetricTiles) {
-                // Get the original tiles from the input fields to know what to display
-                const p1Input = document.getElementById('p1CustomTiles').value.trim();
-                const p2Input = document.getElementById('p2CustomTiles').value.trim();
-                const p1CustomSet = p1Input ? p1Input.split(',').map(s => parseInt(s.trim())).filter(n => n >= 1 && n <= 9) : [1,2,3,4,5,6,7,8,9];
-                const p2CustomSet = p2Input ? p2Input.split(',').map(s => parseInt(s.trim())).filter(n => n >= 1 && n <= 9) : [1,2,3,4,5,6,7,8,9];
-
-                // Update P1 tiles
+                // Update P1 tiles - show actual remaining tiles (handles duplicates)
                 const p1Display = document.getElementById('p1TilesDisplay');
                 p1Display.innerHTML = '';
-                p1CustomSet.forEach((tileValue, idx) => {
+                currentGame.player1Tiles.forEach((tileValue, idx) => {
                     const chip = document.createElement('div');
                     chip.className = 'tile-chip';
                     chip.textContent = tileValue;
-                    if (!currentGame.player1Tiles.includes(tileValue)) {
-                        chip.classList.add('used');
-                    } else {
-                        // Add click listener for available tiles
-                        chip.addEventListener('click', () => onTileClick(tileValue, 1));
-                        if (selectedTile === tileValue && currentGame.currentPlayer === 1) {
-                            chip.classList.add('selected');
-                        }
+                    // Add click listener for available tiles
+                    chip.addEventListener('click', () => onTileClick(tileValue, 1));
+                    if (selectedTile === tileValue && currentGame.currentPlayer === 1) {
+                        chip.classList.add('selected');
                     }
                     p1Display.appendChild(chip);
                 });
 
-                // Update P2 tiles
+                // Update P2 tiles - show actual remaining tiles (handles duplicates)
                 const p2Display = document.getElementById('p2TilesDisplay');
                 p2Display.innerHTML = '';
-                p2CustomSet.forEach((tileValue, idx) => {
+                currentGame.player2Tiles.forEach((tileValue, idx) => {
                     const chip = document.createElement('div');
                     chip.className = 'tile-chip';
                     chip.textContent = tileValue;
-                    if (!currentGame.player2Tiles.includes(tileValue)) {
-                        chip.classList.add('used');
-                    } else {
-                        // Add click listener for available tiles
-                        chip.addEventListener('click', () => onTileClick(tileValue, 2));
-                        if (selectedTile === tileValue && currentGame.currentPlayer === 2) {
-                            chip.classList.add('selected');
-                        }
+                    // Add click listener for available tiles
+                    chip.addEventListener('click', () => onTileClick(tileValue, 2));
+                    if (selectedTile === tileValue && currentGame.currentPlayer === 2) {
+                        chip.classList.add('selected');
                     }
                     p2Display.appendChild(chip);
                 });
@@ -1695,8 +1976,17 @@
             // Get the last move
             const lastMove = moveHistory[moveHistory.length - 1];
 
-            // Recreate the game state by replaying all moves except the last one
-            currentGame = new HexukiGameEngineV2();
+            // Recreate the game state with correct engine type
+            if (useAsymmetricTiles) {
+                currentGame = new HexukiGameEngineAsymmetric();
+                // Reapply custom tiles from input fields
+                applyCustomTiles(currentGame);
+            } else if (useFreeOpening) {
+                currentGame = new HexukiGameEngineFreeOpening();
+            } else {
+                currentGame = new HexukiGameEngineV2();
+            }
+
             mctsAI = new MCTSPlayer(mctsSims, null, {
                 useMinimaxRollouts: useMinimaxRollouts,
                 minimaxThreshold: minimaxThreshold
@@ -1829,6 +2119,19 @@
          * Routes to either JavaScript or C++ WASM engine based on minimaxEngine setting
          */
         function runMinimax(game, depth = 20, jsMinimax = null) {
+            // C++ engine cannot handle asymmetric tiles with duplicates (uses bitmasks)
+            // Force JavaScript engine for asymmetric tiles
+            if (useAsymmetricTiles && minimaxEngine === 'cpp') {
+                if (!window.asymmetricTilesWarningShown) {
+                    console.warn('⚠️ C++ Minimax disabled for asymmetric tiles (uses bitmasks, cannot handle duplicates)');
+                    console.warn('   Using JavaScript Minimax instead.');
+                    window.asymmetricTilesWarningShown = true;
+                }
+                // Force JavaScript engine
+                const solver = jsMinimax || minimaxSolver;
+                return solver.getBestMove(game);
+            }
+
             // Use C++ WASM engine if selected and available
             if (minimaxEngine === 'cpp' && wasmModule) {
                 // Convert game state to C++ format
@@ -1883,8 +2186,27 @@
          * Routes to either JavaScript or C++ WASM engine based on mctsEngine setting
          * Note: May show browser "wait" dialog for high simulation counts (10k+)
          * This is normal - just click "Wait" to let it finish
+         *
+         * Cancellation: Both engines run synchronously, so cancellation is checked
+         * AFTER computation completes. The move won't be applied if cancelled.
+         * For very large sim counts, you must wait for completion before cancel takes effect.
          */
         async function runMCTSChunked(game, totalSims, aiPlayer = null) {
+            // C++ engine cannot handle asymmetric tiles with duplicates (uses bitmasks)
+            // Force JavaScript engine for asymmetric tiles
+            if (useAsymmetricTiles && mctsEngine === 'cpp') {
+                if (!window.asymmetricTilesMCTSWarningShown) {
+                    console.warn('⚠️ C++ MCTS disabled for asymmetric tiles (uses bitmasks, cannot handle duplicates)');
+                    console.warn('   Using JavaScript MCTS instead.');
+                    window.asymmetricTilesMCTSWarningShown = true;
+                }
+                // Force JavaScript engine
+                const ai = aiPlayer || mctsAI;
+                await sleep(0); // Yield to browser
+                const result = await ai.getBestMove(game);
+                return result;
+            }
+
             // Use C++ WASM engine if selected and available
             if (mctsEngine === 'cpp' && wasmModule) {
                 // Convert game state to C++ format
