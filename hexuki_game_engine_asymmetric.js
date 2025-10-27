@@ -320,7 +320,8 @@ class HexukiGameEngineAsymmetric {
         // Anti-symmetry rule: reject if board becomes perfectly mirrored
         // Only check starting from move 2 (moveCount >= 1 before increment)
         // Only check if symmetry is still possible (optimization)
-        if (this.symmetryStillPossible && this.moveCount >= 1 && this.isBoardMirrored()) {
+        // IMPORTANT: Move 19 (moveCount == 18) is ALLOWED to create symmetry (draw condition)
+        if (this.symmetryStillPossible && this.moveCount >= 1 && this.moveCount < 18 && this.isBoardMirrored()) {
             // UNDO the placement - move creates illegal symmetry
             this.board[hexId].value = null;
             this.board[hexId].owner = null;

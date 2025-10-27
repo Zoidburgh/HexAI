@@ -874,8 +874,42 @@ async function testWithMinimax() {
             nodesExplored: (result.nodes || result.nodesExplored) ? (result.nodes || result.nodesExplored).toLocaleString() : 'N/A'
         });
 
-        // Automatically make the move
-        await executeBestMove(result.hexId, result.tileValue);
+        // Try to make the move
+        const success = await executeBestMove(result.hexId, result.tileValue);
+
+        if (!success) {
+            console.error('⚠️ C++ Minimax recommended an ILLEGAL move (anti-symmetry bug in C++ code)');
+            console.error('   Falling back to MCTS...');
+
+            // Fall back to MCTS which handles alternatives
+            const mctsPosition = getPlayGamePositionString();
+            const mctsSimulations = parseInt(document.getElementById('mctsSimulations').value) || 20000;
+
+            wasmModule.loadPosition(mctsPosition);
+            const mctsResultJson = wasmModule.mctsFindBestMove(mctsSimulations, 0, false, false, 10);
+            const mctsResult = JSON.parse(mctsResultJson);
+
+            console.log('=== C++ MCTS Top 10 Moves (Fallback) ===');
+            mctsResult.topMoves.slice(0, 10).forEach((m, i) => {
+                console.log(`  #${i+1}: H${m.hexId + 1}+${m.tileValue} | ${m.visits.toLocaleString()} visits | ${(m.winRate * 100).toFixed(1)}% win rate`);
+            });
+            console.log('==============================');
+
+            // Try MCTS alternatives
+            let moveMade = false;
+            for (let i = 0; i < mctsResult.topMoves.length && !moveMade; i++) {
+                const move = mctsResult.topMoves[i];
+                const mctsSuccess = await executeBestMove(move.hexId, move.tileValue, i > 0);
+                if (mctsSuccess) {
+                    moveMade = true;
+                    console.log(`✅ MCTS alternative #${i+1} succeeded`);
+                }
+            }
+
+            if (!moveMade) {
+                alert('❌ Both Minimax and MCTS failed! Position may have no legal moves.');
+            }
+        }
 
     } catch (err) {
         console.error('Minimax error:', err);
@@ -1056,7 +1090,7 @@ async function runMinimaxMove() {
 
     // Check for minimax failure
     if (result.score === -1000000 || result.score === 1000000 || result.depth === 0) {
-        console.error('❌ Minimax failed - falling back to MCTS');
+        console.warn('⚠️ Minimax search failed - falling back to MCTS');
         await runMCTSMove();
         return;
     }
@@ -1081,8 +1115,8 @@ async function runMinimaxMove() {
 
     const success = await executeBestMove(result.hexId, result.tileValue);
     if (!success) {
-        console.error('❌ Minimax move failed (anti-symmetry)! This should be rare.');
-        throw new Error('Minimax move blocked');
+        console.warn('⚠️ Minimax move rejected (likely anti-symmetry) - falling back to MCTS');
+        await runMCTSMove();
     }
 }
 
@@ -1153,6 +1187,12 @@ function startPlaying() {
     // Create game using real Game engine
     playGame = new HexukiGameEngineAsymmetric();
 
+    // Clear all hexes first (engine initializes center hex to 1 by default)
+    playGame.board.forEach(hex => {
+        hex.value = null;
+        hex.owner = null;
+    });
+
     // Set up board from puzzle
     editorBoard.forEach((value, index) => {
         if (value !== null) {
@@ -1184,6 +1224,12 @@ function startPlaying() {
 function resetPlay() {
     // Reset game state to initial puzzle (keep play area open)
     playGame = new HexukiGameEngineAsymmetric();
+
+    // Clear all hexes first (engine initializes center hex to 1 by default)
+    playGame.board.forEach(hex => {
+        hex.value = null;
+        hex.owner = null;
+    });
 
     // Set up board from puzzle
     editorBoard.forEach((value, index) => {

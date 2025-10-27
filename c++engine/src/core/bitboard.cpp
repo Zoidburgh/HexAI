@@ -308,7 +308,8 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
     uniqueTileValues.erase(std::unique(uniqueTileValues.begin(), uniqueTileValues.end()), uniqueTileValues.end());
 
     // Early optimization: if symmetry already broken, skip symmetry checks
-    bool needSymmetryCheck = symmetryStillPossible && moveCount >= 1;
+    // IMPORTANT: Move 19 (moveCount == 18) is allowed to create symmetry (draw condition)
+    bool needSymmetryCheck = symmetryStillPossible && moveCount >= 1 && moveCount < 18;
 
     for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
         if (isHexOccupied(hexId)) continue;
@@ -316,7 +317,7 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
         if (isMoveLegal(hexId)) {
             // Try each unique tile value (avoids generating duplicate moves)
             for (int tileValue : uniqueTileValues) {
-                // Check if this move would create symmetry
+                // Check if this move would create symmetry (unless it's the final move)
                 if (needSymmetryCheck) {
                     HexukiBitboard testBoard = *this;
                     testBoard.hexOccupied |= (1u << hexId);
@@ -326,7 +327,7 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
                         moves.push_back(Move(hexId, tileValue));
                     }
                 } else {
-                    // No symmetry check needed
+                    // No symmetry check needed (symmetry broken, move 1, or final move)
                     moves.push_back(Move(hexId, tileValue));
                 }
             }
@@ -612,6 +613,39 @@ void HexukiBitboard::loadPosition(const std::string& position) {
         // Parse turn: turn:1
         else if (section.substr(0, 5) == "turn:") {
             currentPlayer = std::stoi(section.substr(5));
+        }
+    }
+
+    // Recalculate moveCount by counting occupied hexes
+    moveCount = 0;
+    for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
+        if (isHexOccupied(hexId)) {
+            moveCount++;
+        }
+    }
+
+    // Recalculate symmetryStillPossible based on current board state
+    // Symmetry is impossible if any mirror pair has different values
+    symmetryStillPossible = true;
+    for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
+        // Skip center column hexes (they mirror to themselves)
+        bool isCenterHex = false;
+        for (int i = 0; i < 5; i++) {
+            if (hexId == CENTER_COLUMN_HEXES[i]) {
+                isCenterHex = true;
+                break;
+            }
+        }
+        if (isCenterHex) continue;
+
+        int mirrorHexId = VERTICAL_MIRROR_PAIRS[hexId];
+        int val1 = hexValues[hexId];
+        int val2 = hexValues[mirrorHexId];
+
+        // If both occupied but different values, symmetry is impossible
+        if (val1 != 0 && val2 != 0 && val1 != val2) {
+            symmetryStillPossible = false;
+            break;
         }
     }
 
