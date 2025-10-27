@@ -389,9 +389,9 @@ function loadFromPositionString(posStr) {
             parts[0].split(',').forEach(placement => {
                 const match = placement.match(/h(\d+):(\d+)/);
                 if (match) {
-                    const hexId = parseInt(match[1]);
+                    const hexId = parseInt(match[1]);  // Already 0-indexed (h0-h18)
                     const value = parseInt(match[2]);
-                    editorBoard[hexId - 1] = value;
+                    editorBoard[hexId] = value;  // No -1 needed, position string uses 0-indexed IDs
                 }
             });
         }
@@ -750,10 +750,14 @@ async function testWithMCTS() {
 
         // Console notification like visualizer
         console.log(`⚡ C++ WASM MCTS: running ${mctsSimulations.toLocaleString()} simulations...`);
+        console.log(`📋 Position: ${position}`);
 
         wasmModule.loadPosition(position);
         const resultJson = wasmModule.mctsFindBestMove(mctsSimulations, 0, false, false, 10);
         const result = JSON.parse(resultJson);
+
+        console.log(`📊 MCTS result:`, result);
+        console.log(`   topMoves: ${result.topMoves ? result.topMoves.length : 'UNDEFINED'}`);
 
         // Log top 10 moves like visualizer
         if (result.topMoves && result.topMoves.length > 0) {
@@ -1044,9 +1048,13 @@ async function runMCTSMove() {
 
     console.log(`⚡ C++ WASM MCTS: running ${mctsSimulations.toLocaleString()} simulations...`);
 
+    console.log(`📋 Loading position: ${position}`);
     wasmModule.loadPosition(position);
     const resultJson = wasmModule.mctsFindBestMove(mctsSimulations, 0, false, false, 10);
     const result = JSON.parse(resultJson);
+
+    console.log(`📊 MCTS returned:`, result);
+    console.log(`   topMoves count: ${result.topMoves ? result.topMoves.length : 'undefined'}`);
 
     // Log top 10 moves like visualizer
     if (result.topMoves && result.topMoves.length > 0) {

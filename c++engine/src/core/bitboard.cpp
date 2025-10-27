@@ -5,12 +5,25 @@
 #include <sstream>
 #include <algorithm>
 #include <cstring>
+#include <set>
 
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
 namespace hexuki {
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+// Check if two tile vectors are identical (same values in any order)
+static bool tilesMatch(std::vector<int> tiles1, std::vector<int> tiles2) {
+    if (tiles1.size() != tiles2.size()) return false;
+    std::sort(tiles1.begin(), tiles1.end());
+    std::sort(tiles2.begin(), tiles2.end());
+    return tiles1 == tiles2;
+}
 
 // ============================================================================
 // Constructor & Reset
@@ -24,6 +37,7 @@ HexukiBitboard::HexukiBitboard()
     , currentPlayer(PLAYER_1)
     , moveCount(0)
     , symmetryStillPossible(true)
+    , tilesAreIdentical(true)
     , zobristHash(0)
 {
     reset();
@@ -46,6 +60,7 @@ void HexukiBitboard::reset() {
     currentPlayer = PLAYER_1;
     moveCount = 0;
     symmetryStillPossible = true;
+    tilesAreIdentical = tilesMatch(p1AvailableTiles, p2AvailableTiles);
     history.clear();
 
     zobristHash = Zobrist::hash(*this);
@@ -171,6 +186,64 @@ std::vector<int> HexukiBitboard::getAllChainLengths() const {
     return chainLengths;
 }
 
+std::vector<HexukiBitboard::ChainInfo> HexukiBitboard::getAllChainsWithMembers() const {
+    std::vector<ChainInfo> chains;
+
+    // Check all chain starters
+    for (int i = 0; i < 15; i++) {
+        const ChainStarter& starter = CHAIN_STARTERS[i];
+        std::vector<int> currentChain;
+        int currentHex = starter.startHex;
+
+        while (currentHex >= 0) {
+            if (isHexOccupied(currentHex)) {
+                currentChain.push_back(currentHex);
+            } else if (!currentChain.empty()) {
+                // Hit empty cell, record current chain and reset
+                ChainInfo info;
+                info.length = currentChain.size();
+                info.hexIds = currentChain;
+                chains.push_back(info);
+                currentChain.clear();
+            }
+
+            // Move to next cell in direction
+            const HexPosition& pos = HEX_POSITIONS[currentHex];
+            int newRow = pos.row + starter.dir.dr;
+            int newCol = pos.col + starter.dir.dc;
+            currentHex = findHexAt(newRow, newCol);
+        }
+
+        // Record final chain if we ended on occupied cells
+        if (!currentChain.empty()) {
+            ChainInfo info;
+            info.length = currentChain.size();
+            info.hexIds = currentChain;
+            chains.push_back(info);
+        }
+    }
+
+    // Find isolated tiles (occupied hexes not part of any detected chain)
+    std::set<int> hexesInChains;
+    for (const auto& chain : chains) {
+        for (int hexId : chain.hexIds) {
+            hexesInChains.insert(hexId);
+        }
+    }
+
+    // Add isolated tiles as 1-chains
+    for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
+        if (isHexOccupied(hexId) && hexesInChains.find(hexId) == hexesInChains.end()) {
+            ChainInfo info;
+            info.length = 1;
+            info.hexIds = {hexId};
+            chains.push_back(info);
+        }
+    }
+
+    return chains;
+}
+
 void HexukiBitboard::getFirstAndSecondChainLengths(int& first, int& second) const {
     auto allLengths = getAllChainLengths();
     first = 0;
@@ -192,12 +265,30 @@ bool HexukiBitboard::checkChainLengthConstraint(int hexId) const {
     testBoard.hexOccupied |= (1u << hexId);
     testBoard.hexValues[hexId] = 1;  // Use dummy value for testing
 
-    // Get chain lengths AFTER the hypothetical placement
-    int first, second;
-    testBoard.getFirstAndSecondChainLengths(first, second);
+    // Get all chains with their member hexes
+    auto allChains = testBoard.getAllChainsWithMembers();
 
-    // Rule: longest chain can be at most 1 longer than second longest
-    if (first > second + 1) {
+    // Find chains that contain the newly placed hexId (affected chains)
+    int longestAffected = 0;
+    for (const auto& chain : allChains) {
+        bool containsNewHex = std::find(chain.hexIds.begin(), chain.hexIds.end(), hexId) != chain.hexIds.end();
+        if (containsNewHex && chain.length > longestAffected) {
+            longestAffected = chain.length;
+        }
+    }
+
+    // Get all chain lengths and sort descending
+    std::vector<int> allLengths;
+    for (const auto& chain : allChains) {
+        allLengths.push_back(chain.length);
+    }
+    std::sort(allLengths.begin(), allLengths.end(), std::greater<int>());
+
+    // Get second longest chain on entire board
+    int secondLongest = allLengths.size() >= 2 ? allLengths[1] : 0;
+
+    // Rule: longest affected chain can be at most 1 longer than second longest
+    if (longestAffected > secondLongest + 1) {
         return false;
     }
 
@@ -308,8 +399,9 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
     uniqueTileValues.erase(std::unique(uniqueTileValues.begin(), uniqueTileValues.end()), uniqueTileValues.end());
 
     // Early optimization: if symmetry already broken, skip symmetry checks
+    // Only enforce anti-symmetry if both players have identical starting tiles
     // IMPORTANT: Move 19 (moveCount == 18) is allowed to create symmetry (draw condition)
-    bool needSymmetryCheck = symmetryStillPossible && moveCount >= 1 && moveCount < 18;
+    bool needSymmetryCheck = tilesAreIdentical && symmetryStillPossible && moveCount >= 1 && moveCount < 18;
 
     for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
         if (isHexOccupied(hexId)) continue;
@@ -648,6 +740,9 @@ void HexukiBitboard::loadPosition(const std::string& position) {
             break;
         }
     }
+
+    // Check if both players have identical starting tiles
+    tilesAreIdentical = tilesMatch(p1AvailableTiles, p2AvailableTiles);
 
     // Recalculate hash
     zobristHash = Zobrist::hash(*this);

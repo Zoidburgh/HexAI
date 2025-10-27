@@ -91,6 +91,7 @@ private:
 
     // Anti-symmetry tracking (optimization)
     bool symmetryStillPossible;
+    bool tilesAreIdentical;  // Only enforce anti-symmetry if both players have identical starting tiles
 
     // Zobrist hashing (for transposition table)
     uint64_t zobristHash;
@@ -118,10 +119,17 @@ private:
     bool checkChainLengthConstraint(int hexId) const;  // Chain length rule
     bool isBoardMirrored() const;  // Anti-symmetry check
 
+    // Chain info structure (for affected chain tracking)
+    struct ChainInfo {
+        int length;
+        std::vector<int> hexIds;
+    };
+
     // Chain detection (for chain length constraint)
     std::vector<int> getChainLengthsFromStart(int startHex, const Direction& dir) const;
     std::vector<int> getAllChainLengths() const;
     void getFirstAndSecondChainLengths(int& first, int& second) const;
+    std::vector<ChainInfo> getAllChainsWithMembers() const;  // Get chains with hex IDs
 
     // Scoring helpers
     int calculatePlayerScore(int player) const;

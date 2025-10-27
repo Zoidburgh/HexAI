@@ -22,6 +22,16 @@ class HexukiGameEngineAsymmetric {
         return tiles;
     }
 
+    /**
+     * Check if two tile arrays are identical (same values in any order)
+     */
+    tilesMatch(tiles1, tiles2) {
+        if (tiles1.length !== tiles2.length) return false;
+        const sorted1 = [...tiles1].sort((a, b) => a - b);
+        const sorted2 = [...tiles2].sort((a, b) => a - b);
+        return sorted1.every((val, i) => val === sorted2[i]);
+    }
+
     reset() {
         // EXACT copy from real game (lines 2314-2350)
         const positions = [
@@ -75,6 +85,9 @@ class HexukiGameEngineAsymmetric {
 
         // Anti-symmetry tracking: once symmetry is broken, no need to check again
         this.symmetryStillPossible = true;
+
+        // Only enforce anti-symmetry if both players have identical starting tiles
+        this.tilesAreIdentical = this.tilesMatch(this.player1Tiles, this.player2Tiles);
 
         // Vertical mirror pairs (for anti-symmetry rule)
         // Maps each hex ID to its vertical mirror across the center column (col 2)
@@ -184,6 +197,77 @@ class HexukiGameEngineAsymmetric {
     }
 
     /**
+     * Get all chains with their member hex IDs
+     * Returns array of {length, hexIds: []}
+     */
+    getAllChainsWithMembers(boardState) {
+        const chains = [];
+
+        // All possible chain starters and directions
+        const chainStarters = [
+            {start: 0, dir: {dr: 1, dc: -1}},
+            {start: 0, dir: {dr: 2, dc: 0}},
+            {start: 0, dir: {dr: 1, dc: 1}},
+            {start: 1, dir: {dr: 2, dc: 0}},
+            {start: 1, dir: {dr: 1, dc: 1}},
+            {start: 2, dir: {dr: 1, dc: -1}},
+            {start: 2, dir: {dr: 2, dc: 0}},
+            {start: 3, dir: {dr: 2, dc: 0}},
+            {start: 3, dir: {dr: 1, dc: 1}},
+            {start: 5, dir: {dr: 1, dc: -1}},
+            {start: 5, dir: {dr: 2, dc: 0}},
+            {start: 8, dir: {dr: 1, dc: 1}},
+            {start: 10, dir: {dr: 1, dc: -1}},
+            {start: 13, dir: {dr: 1, dc: 1}},
+            {start: 15, dir: {dr: 1, dc: -1}}
+        ];
+
+        chainStarters.forEach(({start, dir}) => {
+            let currentChain = [];
+            let current = start;
+
+            while (current !== null) {
+                const hex = boardState.find(h => h.id === current);
+                if (!hex) break;
+
+                if (hex.value !== null) {
+                    currentChain.push(hex.id);
+                } else if (currentChain.length > 0) {
+                    // Hit empty cell, record current chain and reset
+                    chains.push({ length: currentChain.length, hexIds: currentChain });
+                    currentChain = [];
+                }
+
+                // Move to next cell in direction
+                const nextHex = boardState.find(h =>
+                    h.row === hex.row + dir.dr && h.col === hex.col + dir.dc
+                );
+                current = nextHex ? nextHex.id : null;
+            }
+
+            // Record final chain if we ended on occupied cells
+            if (currentChain.length > 0) {
+                chains.push({ length: currentChain.length, hexIds: currentChain });
+            }
+        });
+
+        // Find isolated tiles (occupied hexes not part of any detected chain)
+        const hexesInChains = new Set();
+        chains.forEach(chain => {
+            chain.hexIds.forEach(hexId => hexesInChains.add(hexId));
+        });
+
+        // Add isolated tiles as 1-chains
+        boardState.forEach(hex => {
+            if (hex.value !== null && !hexesInChains.has(hex.id)) {
+                chains.push({ length: 1, hexIds: [hex.id] });
+            }
+        });
+
+        return chains;
+    }
+
+    /**
      * EXACT copy from real game (lines 3822-3850)
      */
     getAllChainLengthsForBoard(boardState) {
@@ -236,7 +320,8 @@ class HexukiGameEngineAsymmetric {
     }
 
     /**
-     * EXACT copy from real game (lines 3781-3800)
+     * Check chain length constraint (modified for puzzle support)
+     * Rule: longest chain CONTAINING the new tile can be at most 1 longer than second longest chain on board
      */
     checkChainLengthConstraint(hexId) {
         // Order 1 games have no length constraint
@@ -247,11 +332,28 @@ class HexukiGameEngineAsymmetric {
         testBoard[hexId].value = 1; // Use dummy value for testing
         testBoard[hexId].owner = `player${this.currentPlayer}`;
 
-        // Get chain lengths AFTER the hypothetical placement
-        const newChainLengths = this.getFirstAndSecondChainLengthsForBoard(testBoard);
+        // Get all chains with their member hexes
+        const allChains = this.getAllChainsWithMembers(testBoard);
 
-        // Rule: longest chain can be at most 1 longer than second longest
-        if (newChainLengths.first > newChainLengths.second + 1) {
+        // Find chains that contain the newly placed hexId (affected chains)
+        const affectedChains = allChains.filter(chain => chain.hexIds.includes(hexId));
+
+        // Get longest affected chain
+        let longestAffected = 0;
+        affectedChains.forEach(chain => {
+            if (chain.length > longestAffected) {
+                longestAffected = chain.length;
+            }
+        });
+
+        // Get all chain lengths sorted descending
+        const allLengths = allChains.map(c => c.length).sort((a, b) => b - a);
+
+        // Get second longest chain on entire board
+        const secondLongest = allLengths.length >= 2 ? allLengths[1] : 0;
+
+        // Rule: longest affected chain can be at most 1 longer than second longest
+        if (longestAffected > secondLongest + 1) {
             return false;
         }
 
@@ -320,8 +422,9 @@ class HexukiGameEngineAsymmetric {
         // Anti-symmetry rule: reject if board becomes perfectly mirrored
         // Only check starting from move 2 (moveCount >= 1 before increment)
         // Only check if symmetry is still possible (optimization)
+        // Only enforce if both players have identical starting tiles
         // IMPORTANT: Move 19 (moveCount == 18) is ALLOWED to create symmetry (draw condition)
-        if (this.symmetryStillPossible && this.moveCount >= 1 && this.moveCount < 18 && this.isBoardMirrored()) {
+        if (this.tilesAreIdentical && this.symmetryStillPossible && this.moveCount >= 1 && this.moveCount < 18 && this.isBoardMirrored()) {
             // UNDO the placement - move creates illegal symmetry
             this.board[hexId].value = null;
             this.board[hexId].owner = null;
