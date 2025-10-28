@@ -1250,14 +1250,12 @@ function startPlaying() {
     playGame.player2Tiles = [...p2Tiles];
     playGame.currentPlayer = startingPlayer;
 
-    // Calculate moveCount: count non-empty hexes minus pre-placed neutral tiles
-    // In puzzles, all initially placed tiles are neutral (owner = null)
-    // So moveCount = 0 at start (all tiles are pre-placed setup, no moves yet)
-    // This ensures anti-symmetry rule applies from the first actual player move
-    const neutralTilesCount = playGame.board.filter(hex => hex.value !== null && hex.owner === null).length;
-    playGame.moveCount = 0; // Start with 0 because puzzle setup tiles don't count as moves
+    // Calculate moveCount based on how many tiles have been used total
+    // This is important for anti-symmetry rule to know if this is the final move
+    const totalTilesUsed = (9 - playGame.player1Tiles.length) + (9 - playGame.player2Tiles.length);
+    playGame.moveCount = totalTilesUsed;
 
-    console.log(`Puzzle loaded: ${neutralTilesCount} pre-placed neutral tiles, moveCount = 0`);
+    console.log(`Puzzle loaded: ${totalTilesUsed} tiles used total, moveCount = ${playGame.moveCount}`);
 
     selectedPlayTile = null;
     moveHistory = [];  // Reset move history
