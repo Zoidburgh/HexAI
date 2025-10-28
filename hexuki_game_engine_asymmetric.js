@@ -434,8 +434,8 @@ class HexukiGameEngineAsymmetric {
         // Anti-symmetry rule: only block if AFTER this move:
         // 1. Board would be symmetric, AND
         // 2. Both players would have identical remaining tiles
-        // IMPORTANT: Move 19 (moveCount == 18) is ALLOWED to create symmetry (draw condition)
-        if (this.symmetryStillPossible && this.moveCount < 18 && this.isBoardMirrored()) {
+        // IMPORTANT: Final move (moveCount == 17, the 18th move) is ALLOWED to create symmetry
+        if (this.symmetryStillPossible && this.moveCount < 17 && this.isBoardMirrored()) {
             // Board is symmetric after move - check if remaining tiles would be equal
             const currentPlayerTiles = this.currentPlayer === 1 ? [...this.player1Tiles] : [...this.player2Tiles];
             const opponentTiles = this.currentPlayer === 1 ? this.player2Tiles : this.player1Tiles;
@@ -588,7 +588,7 @@ class HexukiGameEngineAsymmetric {
         const availableTiles = this.currentPlayer === 1 ? this.player1Tiles : this.player2Tiles;
 
         // Early optimization: if symmetry already broken, skip symmetry checks
-        const needSymmetryCheck = this.symmetryStillPossible && this.moveCount < 18;
+        const needSymmetryCheck = this.symmetryStillPossible && this.moveCount < 17;
 
         for (let hexId = 0; hexId < 19; hexId++) {
             if (this.board[hexId].value !== null) continue;

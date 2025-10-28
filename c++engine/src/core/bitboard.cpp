@@ -382,7 +382,8 @@ bool HexukiBitboard::isValidMove(const Move& move) const {
     // Rule applies if AFTER placing the tile:
     // 1. Board would be symmetric, AND
     // 2. Both players would have identical remaining tiles
-    if (symmetryStillPossible && moveCount < 18) {
+    // Final move is moveCount==17 (18th move total), allow symmetry then
+    if (symmetryStillPossible && moveCount < 17) {
         // Create test board with the move applied
         HexukiBitboard testBoard = *this;
         testBoard.hexOccupied |= (1u << move.hexId);
@@ -422,8 +423,8 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
     std::sort(uniqueTileValues.begin(), uniqueTileValues.end());
     uniqueTileValues.erase(std::unique(uniqueTileValues.begin(), uniqueTileValues.end()), uniqueTileValues.end());
 
-    // Anti-symmetry check: enforce from move 1 onward, except final move
-    bool needSymmetryCheck = symmetryStillPossible && moveCount < 18;
+    // Anti-symmetry check: enforce from move 1 onward, except final move (moveCount==17)
+    bool needSymmetryCheck = symmetryStillPossible && moveCount < 17;
 
     for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
         if (isHexOccupied(hexId)) continue;
