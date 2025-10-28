@@ -352,10 +352,9 @@ function updateBoardStats() {
 function updatePositionString() {
     const hexPlacements = [];
 
-    for (let hexId = 1; hexId <= 19; hexId++) {
-        const hexIndex = hexId - 1;
+    for (let hexIndex = 0; hexIndex < 19; hexIndex++) {
         if (editorBoard[hexIndex] !== null) {
-            hexPlacements.push(`h${hexId}:${editorBoard[hexIndex]}`);
+            hexPlacements.push(`h${hexIndex}:${editorBoard[hexIndex]}`);  // 0-indexed for copy/paste consistency
         }
     }
 
@@ -706,9 +705,46 @@ window.deleteSavedPuzzle = function(puzzleId) {
 // ============================================================================
 
 function setupTesting() {
+    document.getElementById('aiMakeMoveBtn').addEventListener('click', aiMakeMove);
     document.getElementById('testMCTSBtn').addEventListener('click', testWithMCTS);
     document.getElementById('testMinimaxBtn').addEventListener('click', testWithMinimax);
     document.getElementById('autoPlayBtn').addEventListener('click', startAutoPlay);
+}
+
+// AI Make Move - uses threshold to decide between MCTS and minimax
+async function aiMakeMove() {
+    if (!playGame) {
+        alert('❌ Start playing first!');
+        return;
+    }
+
+    if (playGame.gameEnded) {
+        alert('❌ Game is over!');
+        return;
+    }
+
+    if (!wasmModule) {
+        alert('❌ WASM engine not loaded');
+        return;
+    }
+
+    try {
+        // Count empty hexes
+        const emptyHexes = playGame.board.filter(hex => hex.value === null).length;
+        const minimaxThreshold = parseInt(document.getElementById('minimaxThreshold').value) || 10;
+
+        // Decide which AI to use based on threshold
+        if (emptyHexes <= minimaxThreshold) {
+            console.log(`🤖 AI Make Move: ${emptyHexes} empty hexes ≤ ${minimaxThreshold} threshold → Using Minimax`);
+            await runMinimaxMove();
+        } else {
+            console.log(`🤖 AI Make Move: ${emptyHexes} empty hexes > ${minimaxThreshold} threshold → Using MCTS`);
+            await runMCTSMove();
+        }
+    } catch (err) {
+        console.error('AI Make Move error:', err);
+        alert('❌ Error making AI move: ' + err.message);
+    }
 }
 
 // Convert current play game state to position string for WASM (0-indexed)
@@ -1214,6 +1250,15 @@ function startPlaying() {
     playGame.player2Tiles = [...p2Tiles];
     playGame.currentPlayer = startingPlayer;
 
+    // Calculate moveCount: count non-empty hexes minus pre-placed neutral tiles
+    // In puzzles, all initially placed tiles are neutral (owner = null)
+    // So moveCount = 0 at start (all tiles are pre-placed setup, no moves yet)
+    // This ensures anti-symmetry rule applies from the first actual player move
+    const neutralTilesCount = playGame.board.filter(hex => hex.value !== null && hex.owner === null).length;
+    playGame.moveCount = 0; // Start with 0 because puzzle setup tiles don't count as moves
+
+    console.log(`Puzzle loaded: ${neutralTilesCount} pre-placed neutral tiles, moveCount = 0`);
+
     selectedPlayTile = null;
     moveHistory = [];  // Reset move history
 
@@ -1415,7 +1460,8 @@ function onPlayHexClick(hexId) {
     const success = playGame.makeMove(hexIndex, selectedPlayTile);
 
     if (!success) {
-        alert('Invalid move! This hex is already filled.');
+        const errorMsg = playGame.lastError || 'Invalid move! This hex is already filled.';
+        alert(errorMsg);
         return;
     }
 
@@ -1517,6 +1563,13 @@ function updatePlayDisplay() {
     // Update player tiles
     updatePlayerTileDisplay('p1PlayTiles', playGame.player1Tiles, 1);
     updatePlayerTileDisplay('p2PlayTiles', playGame.player2Tiles, 2);
+
+    // Update position string display
+    const posString = getPlayGamePositionString();
+    const posStringElement = document.getElementById('playPositionString');
+    if (posStringElement) {
+        posStringElement.value = posString;
+    }
 }
 
 function updatePlayerTileDisplay(elementId, tiles, player) {
@@ -1526,7 +1579,6 @@ function updatePlayerTileDisplay(elementId, tiles, player) {
         return;
     }
 
-    console.log(`Updating ${elementId} with tiles:`, tiles, 'for player', player);
     container.innerHTML = '';
 
     tiles.forEach(tile => {

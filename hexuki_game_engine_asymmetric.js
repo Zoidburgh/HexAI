@@ -382,6 +382,7 @@ class HexukiGameEngineAsymmetric {
 
         // Check if hex is empty
         if (hex.value !== null) {
+            console.log(`h${hexId} is NOT legal: hex already filled with ${hex.value}`);
             return false;
         }
 
@@ -391,27 +392,36 @@ class HexukiGameEngineAsymmetric {
             this.board[id] && this.board[id].value !== null
         );
 
-        if (!hasAdjacentOccupied) return false;
+        if (!hasAdjacentOccupied) {
+            console.log(`h${hexId} is NOT legal: no adjacent occupied hexes`);
+            return false;
+        }
 
         // Check chain length constraint
         const chainOk = this.checkChainLengthConstraint(hexId);
+
+        if (!chainOk) {
+            console.log(`h${hexId} is NOT legal: chain length constraint violated`);
+        }
 
         return chainOk;
     }
 
     /**
      * Make a move (place a tile)
-     * Returns true if successful, false if illegal
+     * Returns {success: boolean, error: string}
      */
     makeMove(hexId, tileValue) {
         // Validate move
         if (!this.isMoveLegal(hexId)) {
+            this.lastError = 'Invalid hex position';
             return false;
         }
 
         // Validate tile is available
         const availableTiles = this.currentPlayer === 1 ? this.player1Tiles : this.player2Tiles;
         if (!availableTiles.includes(tileValue)) {
+            this.lastError = 'Tile not available';
             return false;
         }
 
@@ -421,15 +431,41 @@ class HexukiGameEngineAsymmetric {
 
         // Anti-symmetry rule: reject if board becomes perfectly mirrored
         // Only check starting from move 2 (moveCount >= 1 before increment)
-        // Only check if symmetry is still possible (optimization)
-        // Only enforce if both players have identical starting tiles
+        // Anti-symmetry rule: only block if AFTER this move:
+        // 1. Board would be symmetric, AND
+        // 2. Both players would have identical remaining tiles
         // IMPORTANT: Move 19 (moveCount == 18) is ALLOWED to create symmetry (draw condition)
-        if (this.tilesAreIdentical && this.symmetryStillPossible && this.moveCount >= 1 && this.moveCount < 18 && this.isBoardMirrored()) {
-            // UNDO the placement - move creates illegal symmetry
-            this.board[hexId].value = null;
-            this.board[hexId].owner = null;
-            return false;
+        if (this.symmetryStillPossible && this.moveCount < 18 && this.isBoardMirrored()) {
+            // Board is symmetric after move - check if remaining tiles would be equal
+            const currentPlayerTiles = this.currentPlayer === 1 ? [...this.player1Tiles] : [...this.player2Tiles];
+            const opponentTiles = this.currentPlayer === 1 ? this.player2Tiles : this.player1Tiles;
+
+            // Remove the tile that was just placed
+            const tileIdx = currentPlayerTiles.indexOf(tileValue);
+            if (tileIdx !== -1) {
+                currentPlayerTiles.splice(tileIdx, 1);
+            }
+
+            console.log(`Anti-symmetry check: h${hexId}+${tileValue}`);
+            console.log(`  Current player tiles after move:`, currentPlayerTiles);
+            console.log(`  Opponent tiles:`, opponentTiles);
+            console.log(`  Tiles match?`, this.tilesMatch(currentPlayerTiles, opponentTiles));
+
+            // Check if remaining tiles would be equal
+            if (this.tilesMatch(currentPlayerTiles, opponentTiles)) {
+                console.log(`  ❌ BLOCKED: Both board symmetric AND tiles equal`);
+                // Both board symmetric AND tiles equal after move - illegal!
+                this.board[hexId].value = null;
+                this.board[hexId].owner = null;
+                this.lastError = 'Symmetry violation: Cannot have vertical board symmetry and same player tiles';
+                return false;
+            } else {
+                console.log(`  ✓ ALLOWED: Board symmetric but tiles NOT equal`);
+            }
+            // else: board symmetric but tiles not equal - move is LEGAL
         }
+
+        this.lastError = null;  // Clear any previous error
 
         // Move is valid - finalize it
         // Remove tile from available tiles
@@ -552,7 +588,7 @@ class HexukiGameEngineAsymmetric {
         const availableTiles = this.currentPlayer === 1 ? this.player1Tiles : this.player2Tiles;
 
         // Early optimization: if symmetry already broken, skip symmetry checks
-        const needSymmetryCheck = this.symmetryStillPossible && this.moveCount >= 1;
+        const needSymmetryCheck = this.symmetryStillPossible && this.moveCount < 18;
 
         for (let hexId = 0; hexId < 19; hexId++) {
             if (this.board[hexId].value !== null) continue;
@@ -579,9 +615,24 @@ class HexukiGameEngineAsymmetric {
                         this.board[hexId].owner = prevOwner;
                         this.symmetryStillPossible = prevSymmetryPossible;
 
-                        // Only add move if it doesn't create symmetry
                         if (!wouldBeSymmetric) {
+                            // Board not symmetric - move is legal
                             moves.push({ hexId, tileValue });
+                        } else {
+                            // Board is symmetric - check if remaining tiles would be equal
+                            const currentPlayerTiles = [...availableTiles];
+                            const tileIdx = currentPlayerTiles.indexOf(tileValue);
+                            if (tileIdx !== -1) {
+                                currentPlayerTiles.splice(tileIdx, 1);
+                            }
+
+                            const opponentTiles = this.currentPlayer === 1 ? this.player2Tiles : this.player1Tiles;
+
+                            // If remaining tiles NOT equal, move is legal despite board symmetry
+                            if (!this.tilesMatch(currentPlayerTiles, opponentTiles)) {
+                                moves.push({ hexId, tileValue });
+                            }
+                            // else: both board symmetric AND tiles equal - illegal, don't add
                         }
                     } else {
                         // No symmetry check needed
