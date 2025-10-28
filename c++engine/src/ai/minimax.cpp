@@ -57,15 +57,17 @@ void TranspositionTable::clear() {
 // ============================================================================
 
 int evaluate(const HexukiBitboard& board) {
-    // Simple evaluation: score difference
-    int currentPlayer = board.getCurrentPlayer();
-    int opponent = (currentPlayer == PLAYER_1) ? PLAYER_2 : PLAYER_1;
+    // Get actual scores for both players
+    int p1Score = board.getScore(PLAYER_1);
+    int p2Score = board.getScore(PLAYER_2);
 
-    int myScore = board.getScore(currentPlayer);
-    int oppScore = board.getScore(opponent);
-
-    // Return from current player's perspective
-    return myScore - oppScore;
+    // Return from current player's perspective (required for negamax)
+    // Positive = current player winning, negative = opponent winning
+    if (board.getCurrentPlayer() == PLAYER_1) {
+        return p1Score - p2Score;
+    } else {
+        return p2Score - p1Score;
+    }
 }
 
 // ============================================================================

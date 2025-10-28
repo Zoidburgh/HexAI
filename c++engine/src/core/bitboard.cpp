@@ -81,8 +81,13 @@ int HexukiBitboard::getTileValue(int hexId) const {
 }
 
 bool HexukiBitboard::isGameOver() const {
-    // Game ends after 18 moves (all non-center hexes filled)
-    return moveCount >= MAX_MOVES;
+    // Game ends when all 19 hexes are filled
+    // Can't use moveCount >= 18 because puzzles might have empty center hex (allowing 19 moves)
+    int occupiedCount = 0;
+    for (int i = 0; i < NUM_HEXES; i++) {
+        if (isHexOccupied(i)) occupiedCount++;
+    }
+    return occupiedCount >= NUM_HEXES;
 }
 
 bool HexukiBitboard::isTileAvailable(int player, int tileValue) const {
