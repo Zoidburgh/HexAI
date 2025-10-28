@@ -1,5 +1,7 @@
 # Large data files
 *.json
+# But allow level files
+!levels/*.json
 
 # OS files
 .DS_Store
