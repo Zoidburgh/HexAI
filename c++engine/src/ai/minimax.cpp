@@ -300,10 +300,20 @@ SearchResult findBestMove(HexukiBitboard& board, const SearchConfig& config) {
             }
 
             // Search all moves at current depth
+            bool depthTimedOut = false;
+            long long elapsed = 0;
             for (const auto& move : moves) {
                 board.makeMove(move);
                 int score = -alphaBeta(board, depth - 1, -beta, -alpha, tt, nodesSearched, startTime, config.timeLimitMs);
                 board.unmakeMove();
+
+                // Check if we timed out during this search
+                auto now = std::chrono::steady_clock::now();
+                elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+                if (elapsed >= config.timeLimitMs) {
+                    depthTimedOut = true;
+                    break;
+                }
 
                 if (score > currentBestScore) {
                     currentBestScore = score;
@@ -315,16 +325,13 @@ SearchResult findBestMove(HexukiBitboard& board, const SearchConfig& config) {
                 }
             }
 
-            // Check if we ran out of time
-            auto now = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
-
-            if (elapsed >= config.timeLimitMs) {
+            // If we timed out mid-depth, don't use this depth's results - use previous depth
+            if (depthTimedOut) {
                 result.timeout = true;
                 break;
             }
 
-            // Update best move from this depth
+            // Update best move from this COMPLETED depth
             bestMove = currentBestMove;
             bestScore = currentBestScore;
             result.depth = depth;

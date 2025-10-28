@@ -837,7 +837,7 @@ async function testWithMinimax() {
         console.log(`⚡ C++ WASM Minimax: running depth 20 search...`);
 
         wasmModule.loadPosition(position);
-        const resultJson = wasmModule.minimaxFindBestMove(20, 30000);  // depth=20, timeout=30000ms
+        const resultJson = wasmModule.minimaxFindBestMove(20, 120000);  // depth=20, timeout=120000ms (2 minutes)
         const result = JSON.parse(resultJson);
 
         // Check for minimax failure (sentinel values)
@@ -1093,7 +1093,7 @@ async function runMinimaxMove() {
     console.log(`⚡ C++ WASM Minimax: running depth 20 search...`);
 
     wasmModule.loadPosition(position);
-    const resultJson = wasmModule.minimaxFindBestMove(20, 30000);  // depth=20, timeout=30000ms
+    const resultJson = wasmModule.minimaxFindBestMove(20, 120000);  // depth=20, timeout=120000ms (2 minutes)
     const result = JSON.parse(resultJson);
 
     // Check for minimax failure
