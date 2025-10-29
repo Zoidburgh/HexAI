@@ -378,15 +378,35 @@ bool HexukiBitboard::isValidMove(const Move& move) const {
         return false;
     }
 
-    // Check anti-symmetry rule (from move 2 onward)
-    if (symmetryStillPossible && moveCount >= 1) {
-        // Temporarily place tile to test symmetry
+    // Check anti-symmetry rule (from move 1 onward, except final move)
+    // Rule applies if AFTER placing the tile:
+    // 1. Board would be symmetric, AND
+    // 2. Both players would have identical remaining tiles
+    // Final move is moveCount==17 (18th move total), allow symmetry then
+    if (symmetryStillPossible && moveCount < 17) {
+        // Create test board with the move applied
         HexukiBitboard testBoard = *this;
         testBoard.hexOccupied |= (1u << move.hexId);
         testBoard.hexValues[move.hexId] = move.tileValue;
 
+        // Check if board would be symmetric after the move
         if (testBoard.isBoardMirrored()) {
-            return false;  // Move would create illegal symmetry
+            // Board is symmetric after move - now check if remaining tiles would be equal
+            std::vector<int> tilesAfterMove = (currentPlayer == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
+
+            // Remove the tile being placed
+            auto it = std::find(tilesAfterMove.begin(), tilesAfterMove.end(), move.tileValue);
+            if (it != tilesAfterMove.end()) {
+                tilesAfterMove.erase(it);
+            }
+
+            // Get opponent's tiles
+            std::vector<int> opponentTiles = (currentPlayer == PLAYER_1) ? p2AvailableTiles : p1AvailableTiles;
+
+            // If remaining tiles would be equal, this move violates anti-symmetry
+            if (tilesMatch(tilesAfterMove, opponentTiles)) {
+                return false;  // Move would create illegal symmetry
+            }
         }
     }
 
@@ -403,10 +423,8 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
     std::sort(uniqueTileValues.begin(), uniqueTileValues.end());
     uniqueTileValues.erase(std::unique(uniqueTileValues.begin(), uniqueTileValues.end()), uniqueTileValues.end());
 
-    // Early optimization: if symmetry already broken, skip symmetry checks
-    // Only enforce anti-symmetry if both players have identical starting tiles
-    // IMPORTANT: Move 19 (moveCount == 18) is allowed to create symmetry (draw condition)
-    bool needSymmetryCheck = tilesAreIdentical && symmetryStillPossible && moveCount >= 1 && moveCount < 18;
+    // Anti-symmetry check: enforce from move 1 onward, except final move (moveCount==17)
+    bool needSymmetryCheck = symmetryStillPossible && moveCount < 17;
 
     for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
         if (isHexOccupied(hexId)) continue;
@@ -420,8 +438,26 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
                     testBoard.hexOccupied |= (1u << hexId);
                     testBoard.hexValues[hexId] = tileValue;
 
+                    // Check if board would be symmetric after the move
                     if (!testBoard.isBoardMirrored()) {
+                        // Board not symmetric - move is legal
                         moves.push_back(Move(hexId, tileValue));
+                    } else {
+                        // Board is symmetric - check if remaining tiles would be equal
+                        std::vector<int> tilesAfterMove = availableTiles;
+                        auto it = std::find(tilesAfterMove.begin(), tilesAfterMove.end(), tileValue);
+                        if (it != tilesAfterMove.end()) {
+                            tilesAfterMove.erase(it);
+                        }
+
+                        // Get opponent's tiles
+                        std::vector<int> opponentTiles = (currentPlayer == PLAYER_1) ? p2AvailableTiles : p1AvailableTiles;
+
+                        // If remaining tiles would NOT be equal, move is legal despite board symmetry
+                        if (!tilesMatch(tilesAfterMove, opponentTiles)) {
+                            moves.push_back(Move(hexId, tileValue));
+                        }
+                        // else: both board symmetric AND tiles equal after move - illegal!
                     }
                 } else {
                     // No symmetry check needed (symmetry broken, move 1, or final move)
