@@ -179,7 +179,7 @@ int alphaBeta(
     for (const auto& move : moves) {
         board.makeMove(move);
         int score = -alphaBeta(board, depth - 1, -beta, -alpha, tt, nodesSearched, startTime, timeLimitMs);
-        board.unmakeMove();
+        board.unmakeMove(move);
 
         if (score > bestScore) {
             bestScore = score;
@@ -263,7 +263,7 @@ SearchResult findBestMove(HexukiBitboard& board, const SearchConfig& config) {
         board.makeMove(moves[0]);
         int nodesSearched = 0;
         result.score = -alphaBeta(board, config.maxDepth - 1, -INF, INF, tt, nodesSearched, startTime, config.timeLimitMs);
-        board.unmakeMove();
+        board.unmakeMove(moves[0]);
 
         result.depth = config.maxDepth;
         result.nodesSearched = nodesSearched;
@@ -298,7 +298,7 @@ SearchResult findBestMove(HexukiBitboard& board, const SearchConfig& config) {
             for (const auto& move : moves) {
                 board.makeMove(move);
                 int score = -alphaBeta(board, depth - 1, -beta, -alpha, tt, nodesSearched, startTime, config.timeLimitMs);
-                board.unmakeMove();
+                board.unmakeMove(move);
 
                 // Check if we timed out during this search
                 auto now = std::chrono::steady_clock::now();
@@ -355,7 +355,7 @@ SearchResult findBestMove(HexukiBitboard& board, const SearchConfig& config) {
         for (const auto& move : moves) {
             board.makeMove(move);
             int score = -alphaBeta(board, config.maxDepth - 1, -beta, -alpha, tt, nodesSearched, startTime, config.timeLimitMs);
-            board.unmakeMove();
+            board.unmakeMove(move);
 
             if (score > bestScore) {
                 bestScore = score;

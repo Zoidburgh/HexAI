@@ -25,6 +25,7 @@ using namespace emscripten;
 static HexukiBitboard* g_board = nullptr;
 static mcts::MCTS* g_mcts = nullptr;
 static bool g_initialized = false;
+static Move g_lastMove(-1, 0);  // Track last move for unmake
 
 // ============================================================================
 // Initialization
@@ -103,6 +104,7 @@ extern "C" bool wasmMakeMove(int hexId, int tileValue) {
 
     Move move(hexId, tileValue);
     if (g_board->isValidMove(move)) {
+        g_lastMove = move;  // Track for unmake
         g_board->makeMove(move);
         return true;
     }
@@ -111,8 +113,9 @@ extern "C" bool wasmMakeMove(int hexId, int tileValue) {
 
 EMSCRIPTEN_KEEPALIVE
 extern "C" void wasmUnmakeMove() {
-    if (g_board) {
-        g_board->unmakeMove();
+    if (g_board && g_lastMove.hexId != -1) {
+        g_board->unmakeMove(g_lastMove);
+        g_lastMove = Move(-1, 0);  // Reset
     }
 }
 

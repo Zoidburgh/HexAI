@@ -35,7 +35,6 @@ HexukiBitboard::HexukiBitboard()
     , p1AvailableTiles(ALL_TILES_MASK)  // All tiles 1-NUM_TILE_VALUES available
     , p2AvailableTiles(ALL_TILES_MASK)
     , currentPlayer(PLAYER_1)
-    , moveCount(0)
     , symmetryStillPossible(true)
     , tilesAreIdentical(true)
     , zobristHash(0)
@@ -58,10 +57,8 @@ void HexukiBitboard::reset() {
     hexValues[CENTER_HEX] = STARTING_TILE;
 
     currentPlayer = PLAYER_1;
-    moveCount = 0;
     symmetryStillPossible = true;
     tilesAreIdentical = tilesMatch(p1AvailableTiles, p2AvailableTiles);
-    history.clear();
 
     zobristHash = Zobrist::hash(*this);
 }
@@ -415,67 +412,49 @@ std::vector<Move> HexukiBitboard::getValidMoves() const {
 // ============================================================================
 
 void HexukiBitboard::makeMove(const Move& move) {
-    // Save state for unmake (full tile array snapshots)
-    MoveRecord record;
-    record.move = move;
-    record.previousP1Tiles = p1AvailableTiles;
-    record.previousP2Tiles = p2AvailableTiles;
-    record.previousSymmetryPossible = symmetryStillPossible;
-
-    // Place tile
+    // Place tile on board
     hexOccupied |= (1u << move.hexId);
     hexValues[move.hexId] = move.tileValue;
 
-    // Remove tile from available tiles (supports duplicates)
+    // Remove tile from current player's available tiles
     std::vector<int>& tiles = (currentPlayer == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
     auto it = std::find(tiles.begin(), tiles.end(), move.tileValue);
     if (it != tiles.end()) {
-        record.removedTileIndex = std::distance(tiles.begin(), it);
-        tiles.erase(it);  // Remove first occurrence of tile value
+        tiles.erase(it);  // Remove first occurrence
     }
 
-    history.push_back(record);
-
-    // Update symmetry tracking
+    // Update symmetry tracking (if we ever re-enable it)
     if (symmetryStillPossible) {
-        // Check if this move permanently breaks symmetry
         int mirrorHexId = VERTICAL_MIRROR_PAIRS[move.hexId];
         if (hexValues[mirrorHexId] != 0 && hexValues[mirrorHexId] != move.tileValue) {
             symmetryStillPossible = false;
         }
     }
 
-    // Update hash
+    // Update zobrist hash
     updateZobristHash(move);
 
-    // Switch player
+    // Switch to next player
     currentPlayer = (currentPlayer == PLAYER_1) ? PLAYER_2 : PLAYER_1;
-    moveCount++;
 }
 
-void HexukiBitboard::unmakeMove() {
-    if (history.empty()) return;
-
-    // Restore previous state
-    const MoveRecord& record = history.back();
-
-    // Undo tile placement
-    hexOccupied &= ~(1u << record.move.hexId);
-    hexValues[record.move.hexId] = 0;
-
-    // Restore available tiles
-    p1AvailableTiles = record.previousP1Tiles;
-    p2AvailableTiles = record.previousP2Tiles;
-    symmetryStillPossible = record.previousSymmetryPossible;
-
-    // Restore metadata
+void HexukiBitboard::unmakeMove(const Move& move) {
+    // Switch player back (undo the player switch from makeMove)
     currentPlayer = (currentPlayer == PLAYER_1) ? PLAYER_2 : PLAYER_1;
-    moveCount--;
 
-    history.pop_back();
+    // Reverse zobrist hash update (XOR is self-inverse)
+    updateZobristHash(move);
 
-    // Recalculate hash
-    zobristHash = Zobrist::hash(*this);
+    // Add tile back to player's available tiles
+    std::vector<int>& tiles = (currentPlayer == PLAYER_1) ? p1AvailableTiles : p2AvailableTiles;
+    tiles.push_back(move.tileValue);
+
+    // Clear tile from board
+    hexOccupied &= ~(1u << move.hexId);
+    hexValues[move.hexId] = 0;
+
+    // Note: symmetryStillPossible is not restored since symmetry checks are disabled
+    // If symmetry is re-enabled later, this would need to track the previous state
 }
 
 // ============================================================================
@@ -538,8 +517,14 @@ void HexukiBitboard::updateZobristHash(const Move& move) {
 // ============================================================================
 
 void HexukiBitboard::print() const {
+    // Count occupied hexes for move count
+    int occupiedCount = 0;
+    for (int i = 0; i < NUM_HEXES; i++) {
+        if (isHexOccupied(i)) occupiedCount++;
+    }
+
     std::cout << "=== Hexuki Board State ===" << std::endl;
-    std::cout << "Move: " << moveCount << ", Player: P" << currentPlayer << std::endl;
+    std::cout << "Occupied: " << occupiedCount << "/" << NUM_HEXES << ", Player: P" << currentPlayer << std::endl;
     std::cout << "Scores: P1=" << getScore(PLAYER_1) << ", P2=" << getScore(PLAYER_2) << std::endl;
     std::cout << std::endl;
 
@@ -575,12 +560,9 @@ void HexukiBitboard::print() const {
 }
 
 std::string HexukiBitboard::toNotation() const {
-    std::ostringstream oss;
-    for (const auto& record : history) {
-        if (!oss.str().empty()) oss << ",";
-        oss << record.move.toString();
-    }
-    return oss.str();
+    // Note: Move history is no longer tracked for performance reasons
+    // This function returns empty string. Use savePosition() for current state.
+    return "";
 }
 
 // ============================================================================
@@ -631,8 +613,6 @@ void HexukiBitboard::loadPosition(const std::string& position) {
     p1AvailableTiles = {1, 2, 3, 4, 5, 6, 7, 8, 9};  // Default: all tiles 1-9 available
     p2AvailableTiles = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     currentPlayer = PLAYER_1;
-    moveCount = 0;
-    history.clear();
 
     // Parse format: "h0:1,h4:5,h9:1|p1:2,3,4|p2:6,7,8|turn:1"
     std::istringstream iss(position);
@@ -686,14 +666,6 @@ void HexukiBitboard::loadPosition(const std::string& position) {
         // Parse turn: turn:1
         else if (section.substr(0, 5) == "turn:") {
             currentPlayer = std::stoi(section.substr(5));
-        }
-    }
-
-    // Recalculate moveCount by counting occupied hexes
-    moveCount = 0;
-    for (int hexId = 0; hexId < NUM_HEXES; hexId++) {
-        if (isHexOccupied(hexId)) {
-            moveCount++;
         }
     }
 

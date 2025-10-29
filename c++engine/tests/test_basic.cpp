@@ -6,10 +6,21 @@
 
 using namespace hexuki;
 
+// Helper function to count moves (occupied hexes excluding initial center hex)
+int countMoves(const HexukiBitboard& board) {
+    int count = 0;
+    for (int i = 0; i < NUM_HEXES; i++) {
+        if (i != CENTER_HEX && board.isHexOccupied(i)) {
+            count++;
+        }
+    }
+    return count;
+}
+
 void testBitboardCreation() {
     HexukiBitboard board;
     assert(board.getCurrentPlayer() == PLAYER_1);
-    assert(board.getMoveCount() == 0);
+    assert(countMoves(board) == 0);
     assert(!board.isGameOver());
 
     // Center hex should start with tile 1
@@ -66,7 +77,7 @@ void testMakingMoves() {
     assert(board.isValidMove(m1));
 
     board.makeMove(m1);
-    assert(board.getMoveCount() == 1);
+    assert(countMoves(board) == 1);
     assert(board.getCurrentPlayer() == PLAYER_2);
     assert(board.isHexOccupied(6));
     assert(board.getTileValue(6) == testTileVal);
@@ -78,7 +89,7 @@ void testUnmakeMove() {
     HexukiBitboard board;
 
     // Save initial state
-    int initialMoveCount = board.getMoveCount();
+    int initialMoveCount = countMoves(board);
     int initialPlayer = board.getCurrentPlayer();
 
     // Make a move
@@ -87,15 +98,15 @@ void testUnmakeMove() {
     board.makeMove(m1);
 
     // Verify move was made
-    assert(board.getMoveCount() == initialMoveCount + 1);
+    assert(countMoves(board) == initialMoveCount + 1);
     assert(board.isHexOccupied(6));
     assert(!board.isTileAvailable(PLAYER_1, testTileVal));
 
     // Unmake the move
-    board.unmakeMove();
+    board.unmakeMove(m1);
 
     // Verify state restored
-    assert(board.getMoveCount() == initialMoveCount);
+    assert(countMoves(board) == initialMoveCount);
     assert(board.getCurrentPlayer() == initialPlayer);
     assert(!board.isHexOccupied(6));
     assert(board.isTileAvailable(PLAYER_1, testTileVal));
@@ -149,7 +160,7 @@ void testGameOver() {
 
     // Game should end after 18 moves (all non-center hexes filled)
     assert(!board.isGameOver());
-    assert(board.getMoveCount() == 0);
+    assert(countMoves(board) == 0);
 
     // A full game has 18 moves
     // (We won't play a full game here, just verify the counter)

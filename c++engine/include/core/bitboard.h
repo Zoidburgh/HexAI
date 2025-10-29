@@ -29,7 +29,6 @@ public:
     bool isHexOccupied(int hexId) const;
     int getTileValue(int hexId) const;        // Returns 0 if empty, 1-9 if occupied
     int getCurrentPlayer() const { return currentPlayer; }
-    int getMoveCount() const { return moveCount; }
     bool isGameOver() const;
 
     // Tile availability
@@ -43,7 +42,7 @@ public:
     std::vector<Move> getValidMoves() const;
     bool isValidMove(const Move& move) const;
     void makeMove(const Move& move);
-    void unmakeMove();  // Undo last move (for minimax)
+    void unmakeMove(const Move& move);  // Undo move (for minimax)
 
     // Utility
     void reset();  // Reset to initial game state
@@ -87,7 +86,6 @@ private:
 
     // Metadata
     int currentPlayer;  // PLAYER_1 or PLAYER_2
-    int moveCount;
 
     // Anti-symmetry tracking (optimization)
     bool symmetryStillPossible;
@@ -95,16 +93,6 @@ private:
 
     // Zobrist hashing (for transposition table)
     uint64_t zobristHash;
-
-    // Move history (for unmake move)
-    struct MoveRecord {
-        Move move;
-        std::vector<int> previousP1Tiles;  // Full tile array snapshot
-        std::vector<int> previousP2Tiles;  // Full tile array snapshot
-        int removedTileIndex;  // Index of tile that was removed (for undo with duplicates)
-        bool previousSymmetryPossible;
-    };
-    std::vector<MoveRecord> history;
 
     // ========================================================================
     // Internal helpers
