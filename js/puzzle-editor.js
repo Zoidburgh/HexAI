@@ -352,10 +352,9 @@ function updateBoardStats() {
 function updatePositionString() {
     const hexPlacements = [];
 
-    for (let hexId = 1; hexId <= 19; hexId++) {
-        const hexIndex = hexId - 1;
+    for (let hexIndex = 0; hexIndex < 19; hexIndex++) {
         if (editorBoard[hexIndex] !== null) {
-            hexPlacements.push(`h${hexId}:${editorBoard[hexIndex]}`);
+            hexPlacements.push(`h${hexIndex}:${editorBoard[hexIndex]}`);  // 0-indexed for copy/paste consistency
         }
     }
 
@@ -706,9 +705,46 @@ window.deleteSavedPuzzle = function(puzzleId) {
 // ============================================================================
 
 function setupTesting() {
+    document.getElementById('aiMakeMoveBtn').addEventListener('click', aiMakeMove);
     document.getElementById('testMCTSBtn').addEventListener('click', testWithMCTS);
     document.getElementById('testMinimaxBtn').addEventListener('click', testWithMinimax);
     document.getElementById('autoPlayBtn').addEventListener('click', startAutoPlay);
+}
+
+// AI Make Move - uses threshold to decide between MCTS and minimax
+async function aiMakeMove() {
+    if (!playGame) {
+        alert('❌ Start playing first!');
+        return;
+    }
+
+    if (playGame.gameEnded) {
+        alert('❌ Game is over!');
+        return;
+    }
+
+    if (!wasmModule) {
+        alert('❌ WASM engine not loaded');
+        return;
+    }
+
+    try {
+        // Count empty hexes
+        const emptyHexes = playGame.board.filter(hex => hex.value === null).length;
+        const minimaxThreshold = parseInt(document.getElementById('minimaxThreshold').value) || 10;
+
+        // Decide which AI to use based on threshold
+        if (emptyHexes <= minimaxThreshold) {
+            console.log(`🤖 AI Make Move: ${emptyHexes} empty hexes ≤ ${minimaxThreshold} threshold → Using Minimax`);
+            await runMinimaxMove();
+        } else {
+            console.log(`🤖 AI Make Move: ${emptyHexes} empty hexes > ${minimaxThreshold} threshold → Using MCTS`);
+            await runMCTSMove();
+        }
+    } catch (err) {
+        console.error('AI Make Move error:', err);
+        alert('❌ Error making AI move: ' + err.message);
+    }
 }
 
 // Convert current play game state to position string for WASM (0-indexed)
@@ -1217,6 +1253,13 @@ function startPlaying() {
     playGame.player2Tiles = [...p2Tiles];
     playGame.currentPlayer = startingPlayer;
 
+    // Calculate moveCount based on how many tiles have been used total
+    // This is important for anti-symmetry rule to know if this is the final move
+    const totalTilesUsed = (9 - playGame.player1Tiles.length) + (9 - playGame.player2Tiles.length);
+    playGame.moveCount = totalTilesUsed;
+
+    console.log(`Puzzle loaded: ${totalTilesUsed} tiles used total, moveCount = ${playGame.moveCount}`);
+
     selectedPlayTile = null;
     moveHistory = [];  // Reset move history
 
@@ -1418,7 +1461,8 @@ function onPlayHexClick(hexId) {
     const success = playGame.makeMove(hexIndex, selectedPlayTile);
 
     if (!success) {
-        alert('Invalid move! This hex is already filled.');
+        const errorMsg = playGame.lastError || 'Invalid move! This hex is already filled.';
+        alert(errorMsg);
         return;
     }
 
@@ -1520,6 +1564,13 @@ function updatePlayDisplay() {
     // Update player tiles
     updatePlayerTileDisplay('p1PlayTiles', playGame.player1Tiles, 1);
     updatePlayerTileDisplay('p2PlayTiles', playGame.player2Tiles, 2);
+
+    // Update position string display
+    const posString = getPlayGamePositionString();
+    const posStringElement = document.getElementById('playPositionString');
+    if (posStringElement) {
+        posStringElement.value = posString;
+    }
 }
 
 function updatePlayerTileDisplay(elementId, tiles, player) {
@@ -1529,7 +1580,6 @@ function updatePlayerTileDisplay(elementId, tiles, player) {
         return;
     }
 
-    console.log(`Updating ${elementId} with tiles:`, tiles, 'for player', player);
     container.innerHTML = '';
 
     tiles.forEach(tile => {

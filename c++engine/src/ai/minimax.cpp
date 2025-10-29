@@ -20,19 +20,25 @@ TranspositionTable::TranspositionTable(size_t sizeMB)
     : maxSize((sizeMB * 1024 * 1024) / sizeof(TTEntry))
     , hits(0)
     , misses(0) {
-    table.reserve(maxSize / 2);
+    table.reserve(maxSize);  // Reserve full capacity to avoid rehashing
 }
 
 void TranspositionTable::store(uint64_t hash, const TTEntry& entry) {
-    // Simple replacement: always store (no replacement strategy yet)
-    if (table.size() >= maxSize) {
-        // Table full - could implement better replacement strategy
-        // For now, just clear oldest half
-        if (table.size() > maxSize * 1.2) {
-            table.clear();
+    // Always-replace strategy with depth preference for existing entries
+    auto it = table.find(hash);
+
+    if (it != table.end()) {
+        // Entry exists - replace only if new entry is deeper or same depth
+        if (entry.depth >= it->second.depth) {
+            it->second = entry;
         }
+        // Otherwise keep the deeper entry
+    } else {
+        // Entry doesn't exist - always add it
+        // Let the hash map grow beyond maxSize if needed
+        // This ensures deep search results are always stored
+        table[hash] = entry;
     }
-    table[hash] = entry;
 }
 
 bool TranspositionTable::probe(uint64_t hash, TTEntry& entry) const {
@@ -75,20 +81,10 @@ int evaluate(const HexukiBitboard& board) {
 // ============================================================================
 
 void orderMoves(std::vector<Move>& moves, HexukiBitboard& board, const TTEntry* ttEntry) {
-    // Simple move ordering: prioritize TT move, then by quick eval
+    // In-place move ordering using lambda - no temporary allocations
 
-    struct MoveScore {
-        Move move;
-        int score;
-        bool operator<(const MoveScore& other) const {
-            return score > other.score;  // Descending order
-        }
-    };
-
-    std::vector<MoveScore> scoredMoves;
-    scoredMoves.reserve(moves.size());
-
-    for (const auto& move : moves) {
+    // Lambda to calculate move score
+    auto scoreMove = [&](const Move& move) -> int {
         int score = 0;
 
         // Bonus for TT move
@@ -106,16 +102,13 @@ void orderMoves(std::vector<Move>& moves, HexukiBitboard& board, const TTEntry* 
             score += 500;
         }
 
-        scoredMoves.push_back({move, score});
-    }
+        return score;
+    };
 
-    // Sort by score (descending)
-    std::sort(scoredMoves.begin(), scoredMoves.end());
-
-    // Update moves array
-    for (size_t i = 0; i < moves.size(); i++) {
-        moves[i] = scoredMoves[i].move;
-    }
+    // Sort moves in-place by score (descending)
+    std::sort(moves.begin(), moves.end(), [&](const Move& a, const Move& b) {
+        return scoreMove(a) > scoreMove(b);
+    });
 }
 
 // ============================================================================
