@@ -1,0 +1,348 @@
+HEXUKI EXHAUSTIVE OPENING ANALYSIS
+Timestamp,2025-10-22T08:30:17.966Z
+Total Openings Tested,19
+Games Per Opening,20
+Total Games,100
+MCTS Simulations,15000
+P2 Move 2 Simulations,30000
+Minimax Threshold,9 empty hexes
+Strong Openings Only,false
+Random Good Openings,true
+Double MCTS for P2 Move 2,true
+P2 Learning Mode,true
+
+P2 GLOBAL BLACKLIST (Responses that lost and were avoided across all openings)
+Blacklisted Responses,"h1t1, h17t1, h1t2, h17t2, h17t3, h4t7, h4t1, h2t9, h10t1, h14t8, h4t2, h14t1, h10t6, h1t3, h16t9, h10t7, h14t9, h10t9, h2t8, h4t4, h2t7, h12t2, h11t4, h10t5, h11t2, h8t1, h8t2, h14t5, h2t6, h7t4, h7t2, h16t7, h14t2, h17t4, h7t8, h8t9, h4t9, h10t2, h11t3, h1t4, h14t7, h6t2, h16t8, h16t6, h17t7, h4t3, h17t6, h6t3, h6t6, h8t6, h12t1, h7t7, h11t5, h8t7, h2t5, h8t8, h14t4, h7t1, h6t5, h12t5, h8t3, h1t9, h17t5, h16t5, h11t8, h12t6, h17t8"
+Total Blacklisted,67
+
+OPENING RANKINGS (Sorted by P1 Win Rate)
+Rank,Opening,Hex,Tile,Games,P1 Wins,P2 Wins,Draws,P1 Win %,Avg Score Diff,Avg P1 Score,Avg P2 Score,Best P2 Response,P2 Response Count,P2 Response Win %,Best P1 Move 3,Move 3 Win %,Move 3 Count
+1,h6t6,6,6,1,1,0,0,100.0%,235.0,1304.0,1069.0,h1t4,1,0.0%,N/A,0.0%,0
+2,h14t4,14,4,1,1,0,0,100.0%,106.0,1455.0,1349.0,h6t6,1,0.0%,N/A,0.0%,0
+3,h12t6,12,6,13,12,1,0,92.3%,312.8,1705.8,1392.9,h17t1,1,0.0%,h15t9,100.0%,8
+4,h6t7,6,7,7,6,1,0,85.7%,242.9,1445.6,1202.7,h1t1,1,0.0%,N/A,0.0%,0
+5,h12t5,12,5,7,6,1,0,85.7%,451.0,1760.7,1309.7,h10t7,1,0.0%,N/A,0.0%,0
+6,h7t6,7,6,6,5,1,0,83.3%,131.8,1507.2,1375.3,h10t2,1,0.0%,h5t1,80.0%,5
+7,h7t9,7,9,6,5,1,0,83.3%,86.7,1270.8,1184.2,h10t1,1,0.0%,h5t1,83.3%,6
+8,h11t8,11,8,5,4,1,0,80.0%,134.2,1262.4,1128.2,h16t8,2,50.0%,h13t1,80.0%,5
+9,h12t7,12,7,5,4,1,0,80.0%,353.2,1729.6,1376.4,h14t8,1,0.0%,N/A,0.0%,0
+10,h7t8,7,8,4,3,1,0,75.0%,430.0,1535.3,1105.3,h4t1,1,0.0%,h5t1,75.0%,4
+11,h6t3,6,3,3,2,1,0,66.7%,-83.0,1128.0,1211.0,h1t2,1,0.0%,N/A,0.0%,0
+12,h12t4,12,4,3,2,1,0,66.7%,27.3,1449.7,1422.3,h4t7,1,0.0%,N/A,0.0%,0
+13,h6t5,6,5,5,3,2,0,60.0%,58.0,1463.4,1405.4,h8t8,2,50.0%,N/A,0.0%,0
+14,h11t7,11,7,7,4,3,0,57.1%,54.1,1234.3,1180.1,h16t8,1,100.0%,h13t1,57.1%,7
+15,h7t7,7,7,4,2,2,0,50.0%,137.0,1509.8,1372.8,h2t9,1,0.0%,h5t1,50.0%,4
+16,h11t9,11,9,6,3,3,0,50.0%,-27.3,1221.2,1248.5,h14t1,1,0.0%,h13t1,50.0%,6
+17,h4t6,4,6,8,3,5,0,37.5%,129.4,1531.6,1402.3,h2t8,3,100.0%,N/A,0.0%,0
+18,h7t5,7,5,5,1,4,0,20.0%,-150.8,1187.4,1338.2,h2t9,1,100.0%,h5t1,25.0%,4
+19,h6t9,6,9,4,0,4,0,0.0%,-309.3,1095.5,1404.8,h8t8,4,100.0%,N/A,0.0%,0
+
+DETAILED OPENING BREAKDOWN
+
+=== h6t6 ===
+Games: 1 | P1 Win Rate: 100.0% | Avg Score Diff: 235.0
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h1t4,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h3t9,1,1,0,100.0%
+
+=== h14t4 ===
+Games: 1 | P1 Win Rate: 100.0% | Avg Score Diff: 106.0
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h6t6,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h3t9,1,1,0,100.0%
+
+=== h12t6 ===
+Games: 13 | P1 Win Rate: 92.3% | Avg Score Diff: 312.8
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h17t1,1,1,0,0.0%
+h17t2,1,1,0,0.0%
+h17t3,1,1,0,0.0%
+h10t6,1,1,0,0.0%
+h11t4,1,1,0,0.0%
+h11t2,1,1,0,0.0%
+h14t5,1,1,0,0.0%
+h17t4,1,1,0,0.0%
+h11t3,1,1,0,0.0%
+h17t7,1,1,0,0.0%
+h17t6,1,1,0,0.0%
+h10t8,1,0,1,100.0%
+h14t4,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h15t9,8,8,0,100.0%
+h16t1,4,4,0,100.0%
+h14t1,1,0,1,0.0%
+
+=== h6t7 ===
+Games: 7 | P1 Win Rate: 85.7% | Avg Score Diff: 242.9
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h1t1,1,1,0,0.0%
+h8t8,1,0,1,100.0%
+h8t9,1,1,0,0.0%
+h4t9,1,1,0,0.0%
+h8t6,1,1,0,0.0%
+h7t1,1,1,0,0.0%
+h8t3,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h3t9,2,2,0,100.0%
+h4t1,2,1,1,50.0%
+h2t1,2,2,0,100.0%
+h13t1,1,1,0,100.0%
+
+=== h12t5 ===
+Games: 7 | P1 Win Rate: 85.7% | Avg Score Diff: 451.0
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h10t7,1,1,0,0.0%
+h14t9,1,1,0,0.0%
+h4t4,1,1,0,0.0%
+h10t5,1,1,0,0.0%
+h10t8,1,0,1,100.0%
+h17t5,1,1,0,0.0%
+h11t8,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h15t9,2,2,0,100.0%
+h15t8,1,1,0,100.0%
+h16t1,1,1,0,100.0%
+h5t1,1,1,0,100.0%
+h14t1,1,0,1,0.0%
+h13t1,1,1,0,100.0%
+
+=== h7t6 ===
+Games: 6 | P1 Win Rate: 83.3% | Avg Score Diff: 131.8
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h10t2,1,1,0,0.0%
+h14t7,1,1,0,0.0%
+h4t3,1,1,0,0.0%
+h6t3,1,1,0,0.0%
+h6t5,1,1,0,0.0%
+h12t7,1,0,1,100.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h5t1,5,4,1,80.0%
+h16t1,1,1,0,100.0%
+
+=== h7t9 ===
+Games: 6 | P1 Win Rate: 83.3% | Avg Score Diff: 86.7
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h10t1,1,1,0,0.0%
+h4t2,1,1,0,0.0%
+h2t8,1,1,0,0.0%
+h12t2,1,1,0,0.0%
+h10t4,1,0,1,100.0%
+h12t6,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h5t1,6,5,1,83.3%
+
+=== h11t8 ===
+Games: 5 | P1 Win Rate: 80.0% | Avg Score Diff: 134.2
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h16t8,2,1,1,50.0%
+h16t9,1,1,0,0.0%
+h14t2,1,1,0,0.0%
+h16t5,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h13t1,5,4,1,80.0%
+
+=== h12t7 ===
+Games: 5 | P1 Win Rate: 80.0% | Avg Score Diff: 353.2
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h14t8,1,1,0,0.0%
+h10t9,1,1,0,0.0%
+h14t7,1,0,1,100.0%
+h7t7,1,1,0,0.0%
+h17t8,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h16t1,2,1,1,50.0%
+h14t1,1,1,0,100.0%
+h5t1,1,1,0,100.0%
+h15t8,1,1,0,100.0%
+
+=== h7t8 ===
+Games: 4 | P1 Win Rate: 75.0% | Avg Score Diff: 430.0
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h4t1,1,1,0,0.0%
+h4t3,1,0,1,100.0%
+h12t1,1,1,0,0.0%
+h2t5,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h5t1,4,3,1,75.0%
+
+=== h6t3 ===
+Games: 3 | P1 Win Rate: 66.7% | Avg Score Diff: -83.0
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h1t2,1,1,0,0.0%
+h11t5,1,1,0,0.0%
+h8t5,1,0,1,100.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h13t1,2,1,1,50.0%
+h3t9,1,1,0,100.0%
+
+=== h12t4 ===
+Games: 3 | P1 Win Rate: 66.7% | Avg Score Diff: 27.3
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h4t7,1,1,0,0.0%
+h7t4,1,1,0,0.0%
+h10t8,1,0,1,100.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h5t1,2,1,1,50.0%
+h2t1,1,1,0,100.0%
+
+=== h6t5 ===
+Games: 5 | P1 Win Rate: 60.0% | Avg Score Diff: 58.0
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h8t8,2,1,1,50.0%
+h1t3,1,1,0,0.0%
+h8t9,1,0,1,100.0%
+h7t2,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h3t9,1,1,0,100.0%
+h4t1,1,0,1,0.0%
+h2t1,1,1,0,100.0%
+h13t1,1,0,1,0.0%
+h1t9,1,1,0,100.0%
+
+=== h11t7 ===
+Games: 7 | P1 Win Rate: 57.1% | Avg Score Diff: 54.1
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h16t8,1,0,1,100.0%
+h16t7,1,1,0,0.0%
+h16t6,1,1,0,0.0%
+h14t3,1,0,1,100.0%
+h8t7,1,1,0,0.0%
+h6t4,1,0,1,100.0%
+h12t5,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h13t1,7,4,3,57.1%
+
+=== h7t7 ===
+Games: 4 | P1 Win Rate: 50.0% | Avg Score Diff: 137.0
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h2t9,1,1,0,0.0%
+h2t8,1,0,1,100.0%
+h2t7,1,1,0,0.0%
+h14t6,1,0,1,100.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h5t1,4,2,2,50.0%
+
+=== h11t9 ===
+Games: 6 | P1 Win Rate: 50.0% | Avg Score Diff: -27.3
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h14t1,1,1,0,0.0%
+h8t1,1,1,0,0.0%
+h8t2,1,1,0,0.0%
+h16t8,1,0,1,100.0%
+h12t4,1,0,1,100.0%
+h6t4,1,0,1,100.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h13t1,6,3,3,50.0%
+
+=== h4t6 ===
+Games: 8 | P1 Win Rate: 37.5% | Avg Score Diff: 129.4
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h2t8,3,0,3,100.0%
+h7t8,1,1,0,0.0%
+h6t2,1,1,0,0.0%
+h1t6,1,0,1,100.0%
+h7t6,1,0,1,100.0%
+h1t9,1,1,0,0.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h6t1,3,0,3,0.0%
+h1t9,2,1,1,50.0%
+h2t1,2,1,1,50.0%
+h1t8,1,1,0,100.0%
+
+=== h7t5 ===
+Games: 5 | P1 Win Rate: 20.0% | Avg Score Diff: -150.8
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h2t9,1,0,1,100.0%
+h2t8,1,0,1,100.0%
+h2t6,1,1,0,0.0%
+h12t5,1,0,1,100.0%
+h14t3,1,0,1,100.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h5t1,4,1,3,25.0%
+h6t1,1,0,1,0.0%
+
+=== h6t9 ===
+Games: 4 | P1 Win Rate: 0.0% | Avg Score Diff: -309.3
+
+P2 Responses:
+Move,Count,P1 Wins,P2 Wins,P2 Win %
+h8t8,4,0,4,100.0%
+
+P1 Move 3 Choices:
+Move,Count,P1 Wins,P2 Wins,P1 Win %
+h4t1,4,0,4,0.0%
+
